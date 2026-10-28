@@ -1,0 +1,64 @@
+package com.example.gestionpsdm.ui.screens
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.example.gestionpsdm.R
+import com.example.gestionpsdm.model.Espacio
+
+@Composable
+fun EspaciosScreen(
+    espacio: Espacio,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    )
+    {
+        Text("Espacios comunitarios")
+        TarjetaEspacio(espacio)
+    }
+
+
+}
+
+@Composable
+fun TarjetaEspacio(espacio: Espacio){
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            Image(
+                painter = painterResource(R.drawable.quincho),
+                contentDescription = "Imagen del quincho",
+                modifier = Modifier.fillMaxWidth()
+                    .height(180.dp),
+                contentScale = ContentScale.Crop
+            )
+            Text(espacio.nombre)
+
+            Text("Capacidad máxima: ${espacio.capacidadMaxima} personas")
+            Button(onClick = {}) {
+                Text("Solicitar reserva")
+            }
+        }
+    }
+}
