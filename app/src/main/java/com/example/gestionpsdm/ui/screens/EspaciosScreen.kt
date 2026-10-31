@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
@@ -20,24 +22,33 @@ import com.example.gestionpsdm.model.Espacio
 
 @Composable
 fun EspaciosScreen(
-    espacio: Espacio,
+    onSolicitarReserva: () -> Unit,
+    espacios: List<Espacio>,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    LazyColumn(
         modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     )
     {
-        Text("Espacios comunitarios")
-        TarjetaEspacio(espacio)
+        item {
+            Text("Espacios comunitarios")
+        }
+
+        items(espacios){
+                espacio ->
+                TarjetaEspacio(onSolicitarReserva, espacio)
+            }
+        }
+
     }
 
 
-}
-
 @Composable
-fun TarjetaEspacio(espacio: Espacio){
+fun TarjetaEspacio(
+    onSolicitarReserva: () -> Unit,
+    espacio: Espacio){
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -56,7 +67,7 @@ fun TarjetaEspacio(espacio: Espacio){
             Text(espacio.nombre)
 
             Text("Capacidad máxima: ${espacio.capacidadMaxima} personas")
-            Button(onClick = {}) {
+            Button(onClick = onSolicitarReserva) {
                 Text("Solicitar reserva")
             }
         }
