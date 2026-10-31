@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.viewmodel.ReservaViewModel
+import com.example.gestionpsdm.ui.components.MensajeError
 
 @Composable
 fun SolicitarReservaScreen(
@@ -39,10 +40,8 @@ fun SolicitarReservaScreen(
             },
             label = { Text("Fecha (DD/MM/AAAA)") },
             isError = errores.fecha != null,
-            supportingText= {
-                if(errores.fecha != null){
-                    Text(errores.fecha!!)
-                }
+            supportingText = {
+                MensajeError(errores.fecha)
             },
             modifier = Modifier.fillMaxWidth()
         )
@@ -55,9 +54,7 @@ fun SolicitarReservaScreen(
             label = { Text("Hora de inicio") },
             isError = errores.horaInicio != null,
             supportingText = {
-                if(errores.horaInicio != null){
-                    Text(errores.horaInicio!!)
-                }
+                MensajeError(errores.horaInicio)
             },
             modifier = Modifier.fillMaxWidth()
         )
@@ -69,9 +66,7 @@ fun SolicitarReservaScreen(
             },
             isError = errores.horaFin != null,
             supportingText = {
-                if(errores.horaFin != null){
-                    Text(errores.horaFin!!)
-                }
+                MensajeError(errores.horaFin)
             },
             label = { Text("Hora de término") },
             modifier = Modifier.fillMaxWidth()

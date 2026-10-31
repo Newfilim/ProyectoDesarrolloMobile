@@ -3,6 +3,7 @@ package com.example.gestionpsdm.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,13 +20,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.R
 import com.example.gestionpsdm.model.Espacio
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
 
 @Composable
 fun EspaciosScreen(
     onSolicitarReserva: () -> Unit,
     espacios: List<Espacio>,
+    preferenciasViewModel: PreferenciasViewModel,
     modifier: Modifier = Modifier
 ) {
+    val mostrarSoloHabilitados by preferenciasViewModel.soloHabilitados.collectAsState()
+    val espaciosVisibles = if (mostrarSoloHabilitados){
+        espacios.filter{ espacio ->
+            espacio.habilitado
+            }
+        }else{
+            espacios
+        }
+
     LazyColumn(
         modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -35,8 +50,25 @@ fun EspaciosScreen(
         item {
             Text("Espacios comunitarios")
         }
+        item{
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Text("Mostrar solo habilitados")
+                Switch(
 
-        items(espacios){
+                    checked = mostrarSoloHabilitados,
+                    onCheckedChange = {nuevoValor ->
+                        preferenciasViewModel.cambiarSoloHabilitados(nuevoValor)
+                    }
+                )
+            }
+
+        }
+
+        items(espaciosVisibles){
                 espacio ->
                 TarjetaEspacio(onSolicitarReserva, espacio)
             }
@@ -67,7 +99,10 @@ fun TarjetaEspacio(
             Text(espacio.nombre)
 
             Text("Capacidad máxima: ${espacio.capacidadMaxima} personas")
-            Button(onClick = onSolicitarReserva) {
+            Button(
+                onClick = onSolicitarReserva,
+                enabled = espacio.habilitado
+            ) {
                 Text("Solicitar reserva")
             }
         }

@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 fun HomeScreen (
     onVerEspacios: () -> Unit,
     onVerFinanzas: () -> Unit,
+    onVerMisReservas: () -> Unit,
     modifier: Modifier = Modifier
 ){
     Column(
@@ -36,6 +37,11 @@ fun HomeScreen (
             style = MaterialTheme.typography.bodyLarge)
         TarjetaEspacios(onVerEspacios)
         TarjetaFinanciera(onVerFinanzas)
+        Button(
+            onClick = onVerMisReservas
+        ) {
+            Text("Mis reservas")
+        }
     }
 
 
