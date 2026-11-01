@@ -88,10 +88,15 @@ fun TarjetaEspacio(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
+            val imagenEspacio = when(espacio.nombre){
+                "Quincho" -> R.drawable.quincho
+                "Piscina" -> R.drawable.piscina
+                "Sala multiuso" -> R.drawable.sala_multiuso
+                else -> R.drawable.quincho
+            }
             Image(
-                painter = painterResource(R.drawable.quincho),
-                contentDescription = "Imagen del quincho",
+                painter = painterResource(imagenEspacio),
+                contentDescription = "Imagen del ${espacio.nombre}",
                 modifier = Modifier.fillMaxWidth()
                     .height(180.dp),
                 contentScale = ContentScale.Crop

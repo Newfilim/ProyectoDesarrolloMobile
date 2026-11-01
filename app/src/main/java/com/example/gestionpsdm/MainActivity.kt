@@ -35,6 +35,7 @@ import com.example.gestionpsdm.ui.screens.ConsultarIngresosScreen
 import com.example.gestionpsdm.viewmodel.LoginViewModel
 import com.example.gestionpsdm.viewmodel.GastoViewModel
 import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
+import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -48,12 +49,13 @@ class MainActivity : ComponentActivity() {
 
                 val navController = rememberNavController()
 
+                val comprobantesViewModel: ComprobantesViewModel = viewModel()
 
 
-                val quincho = Espacio(1, "Quincho Principal", 25, true)
+                val quincho = Espacio(1, "Quincho", 25, true)
                 val sala = Espacio(2, "Sala multiuso", 40, false)
-                val sede = Espacio(id=3, "Sede comunitaria", 60, true)
-                val espacios = listOf<Espacio>(quincho, sala, sede)
+                val piscina = Espacio(id=3, "Piscina", 60, true)
+                val espacios = listOf<Espacio>(quincho, sala, piscina)
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
@@ -112,6 +114,14 @@ class MainActivity : ComponentActivity() {
                                 rol = rol,
                                 onNavegar = { ruta ->
                                     navController.navigate(ruta)
+                                },
+                                onCerrarSesion = {
+                                    navController.navigate(Screen.Login.route){
+                                        popUpTo(navController.graph.id){
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
+                                    }
                                 }
                             )
                         }
@@ -126,6 +136,14 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onVerMisReservas = {
                                     navController.navigate(Screen.MisReservas.route)
+                                },
+                                onCerrarSesion = {
+                                    navController.navigate(Screen.Login.route){
+                                        popUpTo(navController.graph.id){
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
+                                    }
                                 }
                             )
                         }
@@ -167,7 +185,9 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Screen.MisReservas.route) {
-                            MisReservasScreen()
+                            MisReservasScreen(
+                                comprobantesViewModel = comprobantesViewModel
+                            )
                         }
 
                         composable(Screen.GestionEspacios.route) {
@@ -181,7 +201,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Screen.RevisarPagos.route) {
-                            RevisarPagosScreen()
+                            RevisarPagosScreen(
+                                comprobantesViewModel = comprobantesViewModel,
+                                espacios = espacios
+                            )
                         }
 
                         composable(Screen.RegistrarGasto.route) {

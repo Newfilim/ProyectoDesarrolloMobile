@@ -3,6 +3,7 @@ package com.example.gestionpsdm.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -24,6 +25,7 @@ private data class OpcionPanel(
 fun PanelRolScreen(
     rol: RolUsuario,
     onNavegar: (String) -> Unit,
+    onCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val titulo: String
@@ -100,6 +102,7 @@ fun PanelRolScreen(
         Text(
             text = titulo,
             style = MaterialTheme.typography.headlineMedium
+
         )
 
         for (opcion in opciones) {
@@ -128,6 +131,11 @@ fun PanelRolScreen(
                     }
                 }
             }
+        }
+        Button(
+            onClick = onCerrarSesion
+        ) {
+            Text("Cerrar sesión")
         }
     }
 }

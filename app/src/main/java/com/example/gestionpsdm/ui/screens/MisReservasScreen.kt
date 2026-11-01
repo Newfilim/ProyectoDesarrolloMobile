@@ -15,63 +15,49 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.model.EstadoReserva
-import com.example.gestionpsdm.model.Reserva
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.material3.Button
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.layout.height
 import androidx.compose.ui.platform.LocalContext
 import com.example.gestionpsdm.utils.crearArchivoComprobante
 import com.example.gestionpsdm.utils.crearUriComprobante
 import java.io.File
-
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
+import com.example.gestionpsdm.repository.ReservasDemoRepository
+import com.example.gestionpsdm.model.EstadoPago
+import androidx.compose.animation.AnimatedVisibility
 
 @Composable
 fun MisReservasScreen(
+    comprobantesViewModel: ComprobantesViewModel,
     modifier: Modifier = Modifier
+
 ) {
+    val reservas = ReservasDemoRepository.reservas
+    val comprobantesPorReserva = comprobantesViewModel.comprobantesPorReserva
 
-    val reservas = listOf(
-        Reserva(
-            id = 1,
-            idUsuario = 1,
-            idEspacio = 1,
-            fecha = "06/11/2026",
-            horaInicio = "19:00",
-            horaFin = "22:00",
-            estado = EstadoReserva.PENDIENTE
-        ),
-        Reserva(
-            id = 2,
-            idUsuario = 1,
-            idEspacio = 2,
-            fecha = "07/11/2026",
-            horaInicio = "10:00",
-            horaFin = "14:00",
-            estado = EstadoReserva.APROBADA
-        )
-    )
-
-    var comprobanteUri by remember {
-        mutableStateOf<Uri?>(null)
+    var idReservaSeleccionada by remember {
+        mutableStateOf<Int?>(null)
     }
+
 
     val selectorImagen = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { resultado ->
-        if(resultado != null){
-            comprobanteUri = resultado
+        val idReserva = idReservaSeleccionada
+        if (resultado != null && idReserva != null) {
+            comprobantesViewModel.guardarComprobante(idReserva, resultado)
         }
     }
-
-
 
 
     val context = LocalContext.current
@@ -80,9 +66,6 @@ fun MisReservasScreen(
         mutableStateOf<Uri?>(null)
     }
 
-    var fotoCompletaUri by remember {
-        mutableStateOf<Uri?>(null)
-    }
     var archivoPendiente by remember {
         mutableStateOf<File?>(null)
     }
@@ -90,15 +73,20 @@ fun MisReservasScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { exito ->
 
-        if (exito) {
-            fotoCompletaUri = uriPendiente
-        } else {
-                archivoPendiente?.delete()
+        val idReserva = idReservaSeleccionada
+        val imagen = uriPendiente
+
+        if (exito && idReserva != null && imagen != null) {
+            comprobantesViewModel.guardarComprobante(idReserva, imagen)
+        } else if (!exito) {
+            archivoPendiente?.delete()
         }
 
         uriPendiente = null
         archivoPendiente = null
     }
+
+
 
 
 
@@ -120,47 +108,6 @@ fun MisReservasScreen(
         item {
             Text("Consulta el estado de tus solicitudes.")
         }
-        item {
-            Button(
-                onClick = {
-                val archivo = crearArchivoComprobante(context)
-                    archivoPendiente = archivo
-                    val uri = crearUriComprobante(context, archivo)
-                    uriPendiente = uri
-                    camaraCompleta.launch(uri)
-                }
-            ) {
-                Text("Tomar fotografía completa")
-            }
-            if (fotoCompletaUri != null) {
-                AsyncImage(
-                    model = fotoCompletaUri,
-                    contentDescription = "Fotografia completa del comprobante",
-                    modifier = Modifier.fillMaxWidth().height(250.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
-        }
-
-        item{
-            Button(
-                onClick = {
-                    selectorImagen.launch("image/*")
-                }
-            ) {
-                Text("Seleccionar comprobante")
-            }
-            if(comprobanteUri != null){
-                Text("Imagen seleccionada correctamente")
-                AsyncImage(
-                    model = comprobanteUri,
-                    contentDescription = "Vista previa del comprobante",
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
-        }
-
 
         items(reservas) { reserva ->
             Card(
@@ -180,8 +127,68 @@ fun MisReservasScreen(
                     Text("Desde: ${reserva.horaInicio}")
                     Text("Hasta: ${reserva.horaFin}")
                     Text("Estado: ${reserva.estado.name}")
+                    if (reserva.estado == EstadoReserva.APROBADA) {
+                        val estadoPago = comprobantesViewModel.estadosPorReserva[reserva.id]
+                            ?: EstadoPago.PENDIENTE
+
+                        Crossfade(
+                            targetState = estadoPago,
+                            label = "animacionEstadoPagoResidente"
+                        ) { estadoActual ->
+                            Text("Estado del pago: ${estadoActual.name}")
+                        }
+                        AnimatedVisibility(
+                    estadoPago == EstadoPago.PENDIENTE ||
+                            estadoPago == EstadoPago.RECHAZADO,
+                            label = "animacionBotonesComprobante") {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ){
+                                Button(
+                                    onClick = {
+                                        idReservaSeleccionada = reserva.id
+                                        selectorImagen.launch("image/*")
+                                    }
+                                ) {
+                                    Text("Seleccionar desde galería")
+                                }
+                                Button(
+                                    onClick = {
+                                        idReservaSeleccionada = reserva.id
+                                        val archivo = crearArchivoComprobante(context)
+                                        archivoPendiente = archivo
+                                        val uri = crearUriComprobante(context, archivo)
+                                        uriPendiente = uri
+                                        camaraCompleta.launch(uri)
+                                    }
+                                ) {
+                                    Text("Tomar fotografía completa")
+                                }
+                            }
+
+
+                        }
+
+                        val imagenReserva = comprobantesPorReserva[reserva.id]
+
+                        if (imagenReserva != null) {
+
+                            Text("Comprobante adjuntado:")
+
+                            AsyncImage(
+                                model = imagenReserva,
+                                contentDescription = "Comprobante de la reserva ${reserva.id}",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+                    }
                 }
             }
         }
     }
-}
+
+

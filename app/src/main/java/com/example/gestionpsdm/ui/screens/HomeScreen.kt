@@ -1,6 +1,7 @@
 package com.example.gestionpsdm.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -20,8 +21,10 @@ fun HomeScreen (
     onVerEspacios: () -> Unit,
     onVerFinanzas: () -> Unit,
     onVerMisReservas: () -> Unit,
+    onCerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ){
+
     Column(
         modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -41,6 +44,11 @@ fun HomeScreen (
             onClick = onVerMisReservas
         ) {
             Text("Mis reservas")
+        }
+        Button(
+            onClick = onCerrarSesion
+        ) {
+            Text("Cerrar sesión")
         }
     }
 
