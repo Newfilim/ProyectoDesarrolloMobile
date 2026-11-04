@@ -1,5 +1,6 @@
 package com.example.gestionpsdm.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.viewmodel.ReservaViewModel
 import com.example.gestionpsdm.ui.components.MensajeError
@@ -19,11 +21,13 @@ import com.example.gestionpsdm.ui.components.MensajeError
 @Composable
 fun SolicitarReservaScreen(
     viewModel: ReservaViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    idUsuario: Int,
+    idEspacio: Int
 ) {
     val estado by viewModel.estado.collectAsState()
     val errores by viewModel.errores.collectAsState()
-
+    val context = LocalContext.current
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -74,10 +78,17 @@ fun SolicitarReservaScreen(
 
         Button(
             onClick = {
-                viewModel.validarFormulario()
+                val resultado = viewModel.registrarReserva(idUsuario, idEspacio)
+                if(resultado){
+                    Toast.makeText(
+                        context,
+                        "Reserva realizada en espera de aprobación",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         ) {
-            Text("Validar solicitud")
+            Text("Solicitar reserva")
         }
 
         // Aquí agregarás los demás campos.

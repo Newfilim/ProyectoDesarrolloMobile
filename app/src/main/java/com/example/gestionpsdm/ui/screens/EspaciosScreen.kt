@@ -27,7 +27,7 @@ import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
 
 @Composable
 fun EspaciosScreen(
-    onSolicitarReserva: () -> Unit,
+    onSolicitarReserva: (Int) -> Unit,
     espacios: List<Espacio>,
     preferenciasViewModel: PreferenciasViewModel,
     modifier: Modifier = Modifier
@@ -79,7 +79,7 @@ fun EspaciosScreen(
 
 @Composable
 fun TarjetaEspacio(
-    onSolicitarReserva: () -> Unit,
+    onSolicitarReserva: (Int) -> Unit,
     espacio: Espacio){
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -105,7 +105,7 @@ fun TarjetaEspacio(
 
             Text("Capacidad máxima: ${espacio.capacidadMaxima} personas")
             Button(
-                onClick = onSolicitarReserva,
+                onClick = {onSolicitarReserva(espacio.id)},
                 enabled = espacio.habilitado
             ) {
                 Text("Solicitar reserva")

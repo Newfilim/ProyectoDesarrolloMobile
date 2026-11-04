@@ -2,7 +2,10 @@ package com.example.gestionpsdm.viewmodel
 
 
 import androidx.lifecycle.ViewModel
+import com.example.gestionpsdm.model.EstadoReserva
+import com.example.gestionpsdm.model.Reserva
 import com.example.gestionpsdm.model.ReservaFormularioUiState
+import com.example.gestionpsdm.repository.ReservasDemoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.example.gestionpsdm.model.ReservaErrores
@@ -12,7 +15,7 @@ import java.util.Locale
 import java.text.ParseException
 import java.util.Calendar
 
-class ReservaViewModel : ViewModel(){
+class ReservaViewModel : ViewModel() {
 
     private val _estado = MutableStateFlow(
         ReservaFormularioUiState()
@@ -24,19 +27,22 @@ class ReservaViewModel : ViewModel(){
 
     val estado: StateFlow<ReservaFormularioUiState> = _estado
     val errores: StateFlow<ReservaErrores> = _errores
+
+    private val reservas = ReservasDemoRepository.reservas
     fun actualizarFecha(nuevaFecha: String) {
         _estado.value = _estado.value.copy(
             fecha = nuevaFecha
         )
     }
 
-    fun actualizarHoraInicio(nuevaHora: String){
+
+    fun actualizarHoraInicio(nuevaHora: String) {
         _estado.value = _estado.value.copy(
             horaInicio = nuevaHora
         )
     }
 
-    fun actualizarHoraFin(nuevaHora: String){
+    fun actualizarHoraFin(nuevaHora: String) {
         _estado.value = _estado.value.copy(
             horaFin = nuevaHora
         )
@@ -105,13 +111,15 @@ class ReservaViewModel : ViewModel(){
         // Comprobar que la hora de término sea posterior
         if (errorFecha == null &&
             errorHoraInicio == null &&
-            errorHoraFin == null) {
+            errorHoraFin == null
+        ) {
 
             if (!horarioPermitido(
                     datos.fecha,
                     datos.horaInicio,
                     datos.horaFin
-                )) {
+                )
+            ) {
                 errorHoraFin = "El horario no está permitido para ese día"
             }
         }
@@ -126,7 +134,8 @@ class ReservaViewModel : ViewModel(){
         // Resultado de la validación
         if (errorFecha == null &&
             errorHoraInicio == null &&
-            errorHoraFin == null) {
+            errorHoraFin == null
+        ) {
             return true
         }
 
@@ -169,10 +178,10 @@ class ReservaViewModel : ViewModel(){
         val horas = partes[0].toInt()
         val minutos = partes[1].toInt()
 
-            if((horas !in 0..23) ||(minutos !in 0  .. 59)){
-                return false
-            }
-            return true
+        if ((horas !in 0..23) || (minutos !in 0..59)) {
+            return false
+        }
+        return true
 
     }
 
@@ -204,6 +213,7 @@ class ReservaViewModel : ViewModel(){
 
 
     }
+
     private fun horaAMinutos(hora: String): Int {
 
         val partes = hora.split(":")
@@ -258,5 +268,26 @@ class ReservaViewModel : ViewModel(){
         }
 
         return true
+    }
+
+    fun registrarReserva(idUsuario: Int, idEspacio: Int): Boolean{
+    if(validarFormulario()){
+        val ultimoId = reservas.map { it.id }.maxOrNull() ?:0
+        val nuevoId = ultimoId + 1
+        val reserva = _estado.value
+        val nuevaReserva= Reserva(
+            id = nuevoId,
+            idUsuario = idUsuario,
+            idEspacio = idEspacio,
+            fecha = reserva.fecha,
+            horaInicio = reserva.horaInicio,
+            horaFin = reserva.horaFin,
+            estado = EstadoReserva.PENDIENTE
+        )
+
+        ReservasDemoRepository.agregarReserva(nuevaReserva)
+        return true
+    }
+        return false
     }
 }

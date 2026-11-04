@@ -1,11 +1,13 @@
 package com.example.gestionpsdm.repository
 
+import androidx.compose.runtime.mutableStateListOf
 import com.example.gestionpsdm.model.Reserva
 import com.example.gestionpsdm.model.EstadoReserva
 
+
 object ReservasDemoRepository {
 
-    val reservas = listOf(
+    val reservas = mutableStateListOf(
         Reserva(
             id = 1,
             idUsuario = 1,
@@ -25,4 +27,24 @@ object ReservasDemoRepository {
             estado = EstadoReserva.APROBADA
         )
     )
+
+    fun agregarReserva(reserva : Reserva){
+        reservas.add(reserva)
+    }
+
+    fun cambiarEstado(id: Int, nuevoEstado: EstadoReserva){
+        for(i in reservas.indices) {
+            if(reservas[i].id == id){
+                val reservaActual = reservas[i]
+
+                reservas[i] = reservaActual.copy(
+                    estado = nuevoEstado
+
+                )
+                return
+            }
+        }
+    }
+
+
 }

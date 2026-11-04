@@ -17,33 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.model.EstadoReserva
-import com.example.gestionpsdm.model.Reserva
+import com.example.gestionpsdm.repository.ReservasDemoRepository
 
 @Composable
 fun GestionReservasScreen(
     modifier: Modifier = Modifier
 ) {
-    // Reservas ficticias para construir la interfaz.
-    val reservas = listOf(
-        Reserva(
-            id = 1,
-            idUsuario = 1,
-            idEspacio = 1,
-            fecha = "06/11/2026",
-            horaInicio = "19:00",
-            horaFin = "22:00",
-            estado = EstadoReserva.PENDIENTE
-        ),
-        Reserva(
-            id = 2,
-            idUsuario = 2,
-            idEspacio = 2,
-            fecha = "07/11/2026",
-            horaInicio = "10:00",
-            horaFin = "14:00",
-            estado = EstadoReserva.APROBADA
-        )
-    )
+    val reservas = ReservasDemoRepository.reservas
 
     LazyColumn(
         modifier = modifier
@@ -92,15 +72,19 @@ fun GestionReservasScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = {},
-                                enabled = false
+                                onClick = { ReservasDemoRepository.cambiarEstado(
+                                    reserva.id,
+                                    nuevoEstado = EstadoReserva.APROBADA
+                                )}
                             ) {
                                 Text("Aprobar")
                             }
 
                             Button(
-                                onClick = {},
-                                enabled = false
+                                onClick = { ReservasDemoRepository.cambiarEstado(
+                                        reserva.id,
+                                        nuevoEstado = EstadoReserva.RECHAZADA
+                                        )}
                             ) {
                                 Text("Rechazar")
                             }

@@ -5,8 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,6 +27,7 @@ import com.example.gestionpsdm.viewmodel.ReservaViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gestionpsdm.ui.screens.LoginScreen
 import com.example.gestionpsdm.model.RolUsuario
+import com.example.gestionpsdm.model.Usuario
 import com.example.gestionpsdm.ui.screens.PanelRolScreen
 import com.example.gestionpsdm.ui.screens.GestionUsuariosScreen
 import com.example.gestionpsdm.ui.screens.GestionReservasScreen
@@ -46,15 +52,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GestionPSDMTheme {
-
+                var usuarioActual by remember {
+                    mutableStateOf<Usuario?>(null)
+                }
                 val navController = rememberNavController()
 
                 val comprobantesViewModel: ComprobantesViewModel = viewModel()
 
 
+
+
                 val quincho = Espacio(1, "Quincho", 25, true)
                 val sala = Espacio(2, "Sala multiuso", 40, false)
-                val piscina = Espacio(id=3, "Piscina", 60, true)
+                val piscina = Espacio(3, "Piscina", 60, true)
                 val espacios = listOf<Espacio>(quincho, sala, piscina)
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
@@ -73,6 +83,8 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = loginViewModel,
                                 onInicioCorrecto = { usuario ->
+
+                                    usuarioActual = usuario
 
                                     if (usuario.rol == RolUsuario.RESIDENTE) {
 
@@ -116,6 +128,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(ruta)
                                 },
                                 onCerrarSesion = {
+                                    usuarioActual = null
                                     navController.navigate(Screen.Login.route){
                                         popUpTo(navController.graph.id){
                                             inclusive = false
@@ -138,6 +151,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.MisReservas.route)
                                 },
                                 onCerrarSesion = {
+                                    usuarioActual = null
                                     navController.navigate(Screen.Login.route){
                                         popUpTo(navController.graph.id){
                                             inclusive = false
@@ -154,8 +168,8 @@ class MainActivity : ComponentActivity() {
                             EspaciosScreen(
                                 preferenciasViewModel = preferenciasViewModel,
                                 espacios = espacios,
-                                onSolicitarReserva = {
-                                navController.navigate(Screen.SolicitarReserva.route)
+                                onSolicitarReserva = { idEspacio ->
+                                navController.navigate("${Screen.SolicitarReserva.route}/${idEspacio}")
                                     }
                                 )
                             }
@@ -164,12 +178,24 @@ class MainActivity : ComponentActivity() {
                             FinanzasScreen()
                         }
 
-                        composable(Screen.SolicitarReserva.route){
+                        composable(
+                            route= "${Screen.SolicitarReserva.route}/{idEspacio}"
+                        ){ entrada ->
 
+                            val idEspacio = entrada.arguments
+                                ?.getString("idEspacio")
+                                ?.toIntOrNull()
                             val reservaViewModel: ReservaViewModel = viewModel()
 
-                            SolicitarReservaScreen(
-                                viewModel = reservaViewModel)
+                            val usuario = usuarioActual
+                            if(idEspacio != null && usuario != null){
+                                SolicitarReservaScreen(
+                                    reservaViewModel,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    usuario.id,
+                                    idEspacio
+                                )
+                            }
                         }
 
                         composable(Screen.GestionUsuarios.route) {
