@@ -11,6 +11,8 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.gestionpsdm.model.Gasto
+import com.example.gestionpsdm.repository.GastosRepository
 
 class GastoViewModel : ViewModel() {
 
@@ -122,6 +124,39 @@ class GastoViewModel : ViewModel() {
 
         return valido
     }
+
+
+    fun registrarGasto(): Boolean {
+
+        if (!validarFormulario()) {
+            return false
+        }
+
+        val datos = _estado.value
+
+        val monto = datos.monto.toIntOrNull() ?: return false
+        val categoria = datos.categoria ?: return false
+
+        val ultimoId = GastosRepository.gastos
+            .map { it.id }
+            .maxOrNull() ?: 0
+
+        val nuevoGasto = Gasto(
+            id = ultimoId + 1,
+            descripcion = datos.descripcion.trim(),
+            monto = monto,
+            fecha = datos.fecha,
+            categoria = categoria
+        )
+
+        GastosRepository.agregarGasto(nuevoGasto)
+
+        _estado.value = GastoFormularioUiState()
+        _errores.value = GastoErrores()
+
+        return true
+    }
+
 
     private fun convertirFecha(fecha: String): Date? {
 

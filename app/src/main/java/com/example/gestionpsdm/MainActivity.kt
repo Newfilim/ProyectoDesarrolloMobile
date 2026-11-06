@@ -210,11 +210,22 @@ class MainActivity : ComponentActivity() {
                             TesoreriaScreen()
                         }
 
+
                         composable(Screen.MisReservas.route) {
-                            MisReservasScreen(
-                                comprobantesViewModel = comprobantesViewModel
-                            )
+
+                            val usuario = usuarioActual
+
+                            if (usuario != null &&
+                                usuario.rol == RolUsuario.RESIDENTE
+                            ) {
+
+                                MisReservasScreen(
+                                    comprobantesViewModel = comprobantesViewModel,
+                                    idUsuario = usuario.id
+                                )
+                            }
                         }
+
 
                         composable(Screen.GestionEspacios.route) {
                             GestionEspaciosScreen(

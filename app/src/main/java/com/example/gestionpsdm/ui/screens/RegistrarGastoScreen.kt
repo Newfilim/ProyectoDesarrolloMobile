@@ -41,6 +41,9 @@ fun RegistrarGastoScreen(
     var menuAbierto by remember {
         mutableStateOf(false)
     }
+    var mensajeGuardado by remember {
+        mutableStateOf(false)
+    }
 
     Column(
         modifier = modifier
@@ -139,39 +142,20 @@ fun RegistrarGastoScreen(
 
         MensajeError(errores.categoria)
 
-        Button(
-            onClick = {
-                viewModel.validarFormulario()
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Validar gasto")
-        }
 
-        if (estado.formularioValido) {
-            Card(
+            Button(
+                onClick = {
+                    mensajeGuardado = viewModel.registrarGasto()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Datos correctos",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Text("Descripción: ${estado.descripcion}")
-                    Text("Monto: $${estado.monto}")
-                    Text("Fecha: ${estado.fecha}")
-                    Text("Categoría: ${estado.categoria?.name}")
-
-                    Text(
-                        text = "Formulario validado. El almacenamiento se implementará posteriormente.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                Text("Registrar gasto")
             }
+        if (mensajeGuardado) {
+            Text(
+                text = "Gasto registrado correctamente.",
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
