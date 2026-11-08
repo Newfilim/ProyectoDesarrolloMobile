@@ -1,9 +1,12 @@
+
 package com.example.gestionpsdm.repository
 
 import androidx.compose.runtime.mutableStateListOf
 import com.example.gestionpsdm.model.Reserva
 import com.example.gestionpsdm.model.EstadoReserva
-
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 object ReservasDemoRepository {
 
@@ -28,23 +31,119 @@ object ReservasDemoRepository {
         )
     )
 
-    fun agregarReserva(reserva : Reserva){
+    fun agregarReserva(reserva: Reserva) {
         reservas.add(reserva)
     }
 
-    fun cambiarEstado(id: Int, nuevoEstado: EstadoReserva){
-        for(i in reservas.indices) {
-            if(reservas[i].id == id){
-                val reservaActual = reservas[i]
+    private fun horaAMinutos(hora: String): Int {
+        val partes = hora.split(":")
+        val horas = partes[0].toInt()
+        val minutos = partes[1].toInt()
 
-                reservas[i] = reservaActual.copy(
-                    estado = nuevoEstado
-
-                )
-                return
-            }
-        }
+        return horas * 60 + minutos
     }
 
 
+
+    private fun hayConflicto(reservaNueva: Reserva): Boolean {
+
+        val formato = SimpleDateFormat(
+            "dd/MM/yyyy HH:mm",
+            Locale.forLanguageTag("es-CL")
+        )
+
+        formato.isLenient = false
+
+        val inicioNuevo = formato.parse(
+            "${reservaNueva.fecha} ${reservaNueva.horaInicio}"
+        ) ?: return true
+
+        var finNuevo = formato.parse(
+            "${reservaNueva.fecha} ${reservaNueva.horaFin}"
+        ) ?: return true
+
+        // Si termina después de medianoche,
+        // corresponde al día siguiente.
+        if (!finNuevo.after(inicioNuevo)) {
+
+            val calendario = Calendar.getInstance()
+            calendario.time = finNuevo
+            calendario.add(Calendar.DAY_OF_MONTH, 1)
+
+            finNuevo = calendario.time
+        }
+
+        for (reservaExistente in reservas) {
+
+            if (reservaExistente.id == reservaNueva.id) {
+                continue
+            }
+
+            if (reservaExistente.estado != EstadoReserva.APROBADA) {
+                continue
+            }
+
+            if (reservaExistente.idEspacio != reservaNueva.idEspacio) {
+                continue
+            }
+
+            val inicioExistente = formato.parse(
+                "${reservaExistente.fecha} ${reservaExistente.horaInicio}"
+            ) ?: return true
+
+            var finExistente = formato.parse(
+                "${reservaExistente.fecha} ${reservaExistente.horaFin}"
+            ) ?: return true
+
+            if (!finExistente.after(inicioExistente)) {
+
+                val calendario = Calendar.getInstance()
+                calendario.time = finExistente
+                calendario.add(Calendar.DAY_OF_MONTH, 1)
+
+                finExistente = calendario.time
+            }
+
+            // Comprobar si ambos horarios se superponen.
+            if (inicioNuevo.before(finExistente) &&
+                inicioExistente.before(finNuevo)
+            ) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+
+
+    fun cambiarEstado(
+        id: Int,
+        nuevoEstado: EstadoReserva
+    ): Boolean {
+
+        for (i in reservas.indices) {
+
+            val reservaActual = reservas[i]
+
+            if (reservaActual.id == id) {
+
+                // Solo se comprueba el horario al aprobar.
+                if (nuevoEstado == EstadoReserva.APROBADA) {
+
+                    if (hayConflicto(reservaActual)) {
+                        return false
+                    }
+                }
+
+                reservas[i] = reservaActual.copy(
+                    estado = nuevoEstado
+                )
+
+                return true
+            }
+        }
+
+        return false
+    }
 }

@@ -14,6 +14,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.model.EstadoReserva
@@ -23,7 +27,12 @@ import com.example.gestionpsdm.repository.ReservasDemoRepository
 fun GestionReservasScreen(
     modifier: Modifier = Modifier
 ) {
+
     val reservas = ReservasDemoRepository.reservas
+
+    var idReservaConError by remember {
+        mutableStateOf<Int?>(null)
+    }
 
     LazyColumn(
         modifier = modifier
@@ -31,6 +40,7 @@ fun GestionReservasScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+
         item {
             Text(
                 text = "Gestión de reservas",
@@ -39,19 +49,23 @@ fun GestionReservasScreen(
         }
 
         item {
-            Text(
-                text = "Revisa las solicitudes de los residentes."
-            )
+            Text("Revisa las solicitudes de los residentes.")
         }
 
-        items(reservas) { reserva ->
+        items(
+            items = reservas,
+            key = { reserva -> reserva.id }
+        ) { reserva ->
+
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
+
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+
                     Text(
                         text = "Reserva N.º ${reserva.id}",
                         style = MaterialTheme.typography.titleMedium
@@ -68,26 +82,50 @@ fun GestionReservasScreen(
                     Text("Estado: ${reserva.estado.name}")
 
                     if (reserva.estado == EstadoReserva.PENDIENTE) {
+
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+
                             Button(
-                                onClick = { ReservasDemoRepository.cambiarEstado(
-                                    reserva.id,
-                                    nuevoEstado = EstadoReserva.APROBADA
-                                )}
+                                onClick = {
+
+                                    val resultado =
+                                        ReservasDemoRepository.cambiarEstado(
+                                            reserva.id,
+                                            EstadoReserva.APROBADA
+                                        )
+
+                                    if (resultado) {
+                                        idReservaConError = null
+                                    } else {
+                                        idReservaConError = reserva.id
+                                    }
+                                }
                             ) {
                                 Text("Aprobar")
                             }
 
                             Button(
-                                onClick = { ReservasDemoRepository.cambiarEstado(
+                                onClick = {
+
+                                    ReservasDemoRepository.cambiarEstado(
                                         reserva.id,
-                                        nuevoEstado = EstadoReserva.RECHAZADA
-                                        )}
+                                        EstadoReserva.RECHAZADA
+                                    )
+
+                                    idReservaConError = null
+                                }
                             ) {
                                 Text("Rechazar")
                             }
+                        }
+
+                        if (idReservaConError == reserva.id) {
+                            Text(
+                                text = "No se puede aprobar: existe otra reserva aprobada para ese espacio y horario.",
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 }

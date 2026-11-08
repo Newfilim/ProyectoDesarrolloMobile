@@ -11,13 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.gestionpsdm.model.Espacio
 import com.example.gestionpsdm.navigation.Screen
 import com.example.gestionpsdm.ui.screens.EspaciosScreen
 import com.example.gestionpsdm.ui.screens.HomeScreen
@@ -28,7 +26,6 @@ import com.example.gestionpsdm.viewmodel.ReservaViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gestionpsdm.ui.screens.LoginScreen
 import com.example.gestionpsdm.model.RolUsuario
-import com.example.gestionpsdm.model.Usuario
 import com.example.gestionpsdm.ui.screens.PanelRolScreen
 import com.example.gestionpsdm.ui.screens.GestionUsuariosScreen
 import com.example.gestionpsdm.ui.screens.GestionReservasScreen
@@ -45,6 +42,7 @@ import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.gestionpsdm.repository.UsuariosDemoRepository
+import com.example.gestionpsdm.repository.EspaciosDemoRepository
 
 class MainActivity : ComponentActivity() {
 
@@ -72,10 +70,7 @@ class MainActivity : ComponentActivity() {
 
 
 
-                val quincho = Espacio(1, "Quincho", 25, true)
-                val sala = Espacio(2, "Sala multiuso", 40, false)
-                val piscina = Espacio(3, "Piscina", 60, true)
-                val espacios = listOf<Espacio>(quincho, sala, piscina)
+                val espacios = EspaciosDemoRepository.espacios
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
@@ -240,11 +235,21 @@ class MainActivity : ComponentActivity() {
 
 
 
+
                         composable(Screen.GestionEspacios.route) {
+
                             GestionEspaciosScreen(
-                                espacios = espacios
+                                espacios = espacios,
+                                onCambiarEstado = { id, habilitado ->
+
+                                    EspaciosDemoRepository.cambiarEstadoEspacio(
+                                        id,
+                                        habilitado
+                                    )
+                                }
                             )
                         }
+
 
                         composable(Screen.InformeFinanciero.route) {
                             InformeFinancieroScreen()
