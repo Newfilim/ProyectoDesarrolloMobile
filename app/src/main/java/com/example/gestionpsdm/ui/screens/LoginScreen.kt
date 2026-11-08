@@ -1,3 +1,4 @@
+
 package com.example.gestionpsdm.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,20 +10,27 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.model.Usuario
-import com.example.gestionpsdm.viewmodel.LoginViewModel
 import com.example.gestionpsdm.ui.components.MensajeError
+import com.example.gestionpsdm.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
@@ -32,6 +40,10 @@ fun LoginScreen(
 ) {
 
     val estado by viewModel.estado.collectAsState()
+
+    var mostrarContrasena by remember {
+        mutableStateOf(false)
+    }
 
     Column(
         modifier = modifier
@@ -83,14 +95,36 @@ fun LoginScreen(
             label = {
                 Text("Contraseña")
             },
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (mostrarContrasena) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        mostrarContrasena = !mostrarContrasena
+                    },
+                    modifier = Modifier.semantics {
+                        contentDescription = if (mostrarContrasena) {
+                            "Ocultar contraseña"
+                        } else {
+                            "Mostrar contraseña"
+                        }
+                    }
+                ) {
+                    Text(
+                        text = if (mostrarContrasena) "🙈" else "👁"
+                    )
+                }
+            },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
             singleLine = true,
             isError = estado.errorContrasena != null,
             supportingText = {
-                MensajeError(estado.errorCorreo)
+                MensajeError(estado.errorContrasena)
             },
             modifier = Modifier.fillMaxWidth()
         )

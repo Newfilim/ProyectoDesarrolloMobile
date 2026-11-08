@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,8 @@ import com.example.gestionpsdm.viewmodel.LoginViewModel
 import com.example.gestionpsdm.viewmodel.GastoViewModel
 import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.gestionpsdm.repository.UsuariosDemoRepository
 
 class MainActivity : ComponentActivity() {
 
@@ -52,9 +55,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GestionPSDMTheme {
-                var usuarioActual by remember {
-                    mutableStateOf<Usuario?>(null)
+
+
+                var idUsuarioActual by rememberSaveable {
+                    mutableStateOf<Int?>(null)
                 }
+
+                val usuarioActual = UsuariosDemoRepository.obtenerUsuarios()
+                    .find { it.id == idUsuarioActual }
+
+
                 val navController = rememberNavController()
 
                 val comprobantesViewModel: ComprobantesViewModel = viewModel()
@@ -84,7 +94,7 @@ class MainActivity : ComponentActivity() {
                                 viewModel = loginViewModel,
                                 onInicioCorrecto = { usuario ->
 
-                                    usuarioActual = usuario
+                                    idUsuarioActual = usuario.id
 
                                     if (usuario.rol == RolUsuario.RESIDENTE) {
 
@@ -128,7 +138,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(ruta)
                                 },
                                 onCerrarSesion = {
-                                    usuarioActual = null
+                                    idUsuarioActual = null
                                     navController.navigate(Screen.Login.route){
                                         popUpTo(navController.graph.id){
                                             inclusive = false
@@ -151,7 +161,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.MisReservas.route)
                                 },
                                 onCerrarSesion = {
-                                    usuarioActual = null
+                                    idUsuarioActual = null
                                     navController.navigate(Screen.Login.route){
                                         popUpTo(navController.graph.id){
                                             inclusive = false
@@ -211,6 +221,7 @@ class MainActivity : ComponentActivity() {
                         }
 
 
+
                         composable(Screen.MisReservas.route) {
 
                             val usuario = usuarioActual
@@ -218,13 +229,15 @@ class MainActivity : ComponentActivity() {
                             if (usuario != null &&
                                 usuario.rol == RolUsuario.RESIDENTE
                             ) {
-
                                 MisReservasScreen(
                                     comprobantesViewModel = comprobantesViewModel,
                                     idUsuario = usuario.id
                                 )
+                            } else {
+                                Text("No se encontró una sesión de residente activa.")
                             }
                         }
+
 
 
                         composable(Screen.GestionEspacios.route) {
