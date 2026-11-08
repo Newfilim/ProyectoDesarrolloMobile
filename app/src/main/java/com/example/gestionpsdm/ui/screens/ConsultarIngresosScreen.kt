@@ -22,14 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.gestionpsdm.repository.IngresosRepository
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.gestionpsdm.viewmodel.IngresoViewModel
 
 @Composable
 fun ConsultarIngresosScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: IngresoViewModel = viewModel()
 ) {
 
     var descripcion by remember { mutableStateOf("") }
@@ -38,8 +37,8 @@ fun ConsultarIngresosScreen(
     var mensaje by remember { mutableStateOf("") }
     var esError by remember { mutableStateOf(false) }
 
-    val ingresos = IngresosRepository.ingresos
-    val totalIngresos = IngresosRepository.obtenerTotalIngresos()
+    val ingresos = viewModel.obtenerIngresos()
+    val totalIngresos = viewModel.obtenerTotalIngresos()
 
     LazyColumn(
         modifier = modifier
@@ -104,50 +103,21 @@ fun ConsultarIngresosScreen(
             Button(
                 onClick = {
 
-                    val montoNumerico = monto.toIntOrNull()
-
-                    val formato = SimpleDateFormat(
-                        "dd/MM/yyyy",
-                        Locale.forLanguageTag("es-CL")
-                    )
-                    formato.isLenient = false
-
-                    val fechaIngresada = try {
-                        formato.parse(fecha)
-                    } catch (e: Exception) {
-                        null
-                    }
-
-                    val fechaHoy = formato.parse(
-                        formato.format(Date())
+                    val error = viewModel.registrarIngreso(
+                        descripcion = descripcion,
+                        monto = monto,
+                        fecha = fecha
                     )
 
-                    if (descripcion.isBlank() ||
-                        montoNumerico == null ||
-                        montoNumerico <= 0 ||
-                        fechaIngresada == null ||
-                        fechaIngresada.after(fechaHoy)
-                    ) {
-                        mensaje = "Revisa la descripción, monto y fecha. No se permiten fechas futuras."
-                        esError = true
+                    if (error == null) {
+                        descripcion = ""
+                        monto = ""
+                        fecha = ""
+                        mensaje = "Ingreso registrado correctamente."
+                        esError = false
                     } else {
-
-                        val resultado = IngresosRepository.agregarIngreso(
-                            descripcion = descripcion,
-                            monto = montoNumerico,
-                            fecha = fecha
-                        )
-
-                        if (resultado) {
-                            descripcion = ""
-                            monto = ""
-                            fecha = ""
-                            mensaje = "Ingreso registrado correctamente."
-                            esError = false
-                        } else {
-                            mensaje = "No se pudo registrar el ingreso."
-                            esError = true
-                        }
+                        mensaje = error
+                        esError = true
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -191,7 +161,7 @@ fun ConsultarIngresosScreen(
 
         items(
             items = ingresos,
-            key = { it.id }
+            key = { ingreso -> ingreso.id }
         ) { ingreso ->
 
             Card(
@@ -205,6 +175,7 @@ fun ConsultarIngresosScreen(
                         text = ingreso.descripcion,
                         style = MaterialTheme.typography.titleMedium
                     )
+
                     Text("Fecha: ${ingreso.fecha}")
                     Text("Monto: $${ingreso.monto} CLP")
                 }
@@ -212,4 +183,5 @@ fun ConsultarIngresosScreen(
         }
     }
 }
+
 
