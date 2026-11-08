@@ -5,17 +5,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun HomeScreen(
@@ -32,35 +37,64 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
+
+// Encabezado de bienvenida
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor =
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        ) {
+
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                Text(
+                    text = "JUNTA DE VECINOS ZAROR",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "¡Bienvenido a tu comunidad!",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = "Desde aquí puedes reservar espacios comunitarios, revisar tus solicitudes y consultar las finanzas.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+// Título para las acciones
         Text(
-            text = "Junta de vecinos Zaror",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
+            text = "¿Qué deseas hacer hoy?",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Text(
-            text = "Bienvenido a nuestra comunidad",
-            style = MaterialTheme.typography.bodyLarge
-        )
 
         TarjetaEspacios(onVerEspacios)
 
-        TarjetaFinanciera(onVerFinanzas)
-
-        Button(
+        TarjetaAccionResidente(
+            titulo = "Mis reservas",
+            descripcion = "Consulta tus solicitudes, revisa su estado y adjunta tus comprobantes de pago.",
+            textoBoton = "Ver mis reservas",
             onClick = onVerMisReservas
-        ) {
-            Text("Mis reservas")
-        }
+        )
 
-        Button(
-            onClick = onCerrarSesion
-        ) {
-            Text("Cerrar sesión")
-        }
+        TarjetaFinanciera(onVerFinanzas)
     }
 }
 
@@ -69,28 +103,12 @@ fun TarjetaEspacios(
     onVerEspacios: () -> Unit
 ) {
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            Text(
-                text = "Espacios comunitarios",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text("Consulta los espacios disponibles y solicita una reserva")
-
-            Button(
-                onClick = onVerEspacios
-            ) {
-                Text("Ver espacios disponibles")
-            }
-        }
-    }
+    TarjetaAccionResidente(
+        titulo = "Espacios comunitarios",
+        descripcion = "Conoce el quincho, la piscina y la sala multiuso. Revisa cuáles están disponibles y solicita una reserva.",
+        textoBoton = "Ver espacios",
+        onClick = onVerEspacios
+    )
 }
 
 @Composable
@@ -98,25 +116,58 @@ fun TarjetaFinanciera(
     onVerFinanzas: () -> Unit
 ) {
 
+    TarjetaAccionResidente(
+        titulo = "Transparencia financiera",
+        descripcion = "Consulta la información sobre los ingresos y gastos de nuestra comunidad.",
+        textoBoton = "Ver finanzas",
+        onClick = onVerFinanzas
+    )
+}
+
+@Composable
+private fun TarjetaAccionResidente(
+    titulo: String,
+    descripcion: String,
+    textoBoton: String,
+    onClick: () -> Unit
+) {
+
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
+
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
 
             Text(
-                text = "Transparencia financiera",
-                style = MaterialTheme.typography.titleMedium
+                text = titulo,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            Text("Consulta los ingresos y gastos de la comunidad")
+            Text(
+                text = descripcion,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Button(
-                onClick = onVerFinanzas
+                onClick = onClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp),
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text("Ver finanzas")
+                Text(
+                    text = "$textoBoton  →",
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }

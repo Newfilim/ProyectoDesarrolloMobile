@@ -1,11 +1,12 @@
-
 package com.example.gestionpsdm.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -22,15 +23,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.gestionpsdm.R
 import com.example.gestionpsdm.model.Usuario
 import com.example.gestionpsdm.ui.components.MensajeError
 import com.example.gestionpsdm.viewmodel.LoginViewModel
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun LoginScreen(
@@ -56,6 +61,12 @@ fun LoginScreen(
             Alignment.CenterVertically
         )
     ) {
+
+        Image(
+            painter = painterResource(id = R.drawable.homeicon),
+            contentDescription = "Ilustración de bienvenida",
+            modifier = Modifier.size(140.dp)
+        )
 
         Text(
             text = "Junta de Vecinos Zaror",

@@ -1,11 +1,22 @@
+
 package com.example.gestionpsdm.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Fondos y superficies
+val FondoOscuro = Color(0xFF202433)
+val SuperficieOscura = Color(0xFF292E41)
+val TarjetaOscura = Color(0xFF30354A)
+val SuperficieElevada = Color(0xFF414762)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Colores principales
+val LavandaPrincipal = Color(0xFFA8B1E5)
+val VioletaSecundario = Color(0xFF858FCB)
+
+// Textos
+val TextoPrincipal = Color(0xFFFFFFFF)
+val TextoSecundario = Color(0xFFC9CEE7)
+val TextoSobreLavanda = Color(0xFF171A29)
+
+// Errores
+val ErrorSuave = Color(0xFFFFB4AB)

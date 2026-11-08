@@ -2,21 +2,28 @@
 package com.example.gestionpsdm.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,12 +32,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gestionpsdm.model.RolUsuario
 import com.example.gestionpsdm.model.Usuario
 import com.example.gestionpsdm.viewmodel.GestionUsuariosViewModel
+
+// Muestra los roles con nombres fáciles de comprender.
+private fun nombreRol(rol: RolUsuario): String {
+    return when (rol) {
+        RolUsuario.RESIDENTE -> "Residente"
+        RolUsuario.ADMINISTRADOR -> "Administrador"
+        RolUsuario.TESORERIA -> "Tesorería"
+        RolUsuario.DIRECTIVA -> "Directiva"
+    }
+}
 
 @Composable
 fun GestionUsuariosScreen(
@@ -83,6 +103,7 @@ fun GestionUsuariosScreen(
         contrasena = ""
         rolSeleccionado = RolUsuario.RESIDENTE
         mensajeError = null
+        menuRolesAbierto = false
         mostrarFormulario = true
     }
 
@@ -93,6 +114,7 @@ fun GestionUsuariosScreen(
         contrasena = ""
         rolSeleccionado = usuario.rol
         mensajeError = null
+        menuRolesAbierto = false
         mostrarFormulario = true
     }
 
@@ -100,18 +122,23 @@ fun GestionUsuariosScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
         item {
             Text(
                 text = "Gestión de usuarios",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
         item {
-            Text("Administra las cuentas de la junta de vecinos.")
+            Text(
+                text = "Crea cuentas, edita los datos y administra el acceso de los integrantes de la comunidad.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         item {
@@ -119,17 +146,39 @@ fun GestionUsuariosScreen(
                 onClick = {
                     abrirCrear()
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp),
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text("Crear usuario")
+                Text(
+                    text = "+ Crear nuevo usuario",
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
 
         if (mensajeGeneral != null) {
             item {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = mensajeGeneral ?: "",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        }
+
+        if (usuarios.isEmpty()) {
+            item {
                 Text(
-                    text = mensajeGeneral ?: "",
-                    color = MaterialTheme.colorScheme.primary
+                    text = "No hay usuarios registrados.",
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
         }
@@ -140,58 +189,142 @@ fun GestionUsuariosScreen(
         ) { usuario ->
 
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.surfaceContainer
+                )
             ) {
 
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
 
                     Text(
                         text = usuario.nombre,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    Text("Correo: ${usuario.correo}")
-                    Text("Rol: ${usuario.rol.name}")
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        Text(
+                            text = if (usuario.activo) {
+                                "✓ Cuenta activa"
+                            } else {
+                                "Cuenta deshabilitada"
+                            },
+                            modifier = Modifier.padding(
+                                horizontal = 14.dp,
+                                vertical = 10.dp
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
 
-                    Text(
-                        if (usuario.activo) {
-                            "Estado: Activo"
-                        } else {
-                            "Estado: Inactivo"
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Correo electrónico",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Text(
+                            text = usuario.correo,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Rol del usuario",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Text(
+                            text = nombreRol(usuario.rol),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+
+                            Text(
+                                text = "Permitir acceso",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            Text(
+                                text = if (usuario.activo) {
+                                    "Esta cuenta puede iniciar sesión."
+                                } else {
+                                    "Esta cuenta no puede iniciar sesión."
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color =
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
+
+                        Switch(
+                            checked = usuario.activo,
+                            onCheckedChange = { nuevoEstado ->
+
+                                val resultado =
+                                    viewModel.cambiarEstadoUsuario(
+                                        usuario.id,
+                                        nuevoEstado
+                                    )
+
+                                mensajeGeneral = if (resultado) {
+
+                                    if (nuevoEstado) {
+                                        "Cuenta habilitada correctamente."
+                                    } else {
+                                        "Cuenta deshabilitada correctamente."
+                                    }
+
+                                } else {
+
+                                    "No se pudo cambiar el estado. Debe existir al menos un administrador activo."
+                                }
+                            }
+                        )
+                    }
 
                     OutlinedButton(
                         onClick = {
                             abrirEditar(usuario)
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Editar usuario")
+                        Text(
+                            text = "Editar datos del usuario",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
-
-                    Text("Cuenta habilitada")
-
-                    Switch(
-                        checked = usuario.activo,
-                        onCheckedChange = { nuevoEstado ->
-
-                            val resultado =
-                                viewModel.cambiarEstadoUsuario(
-                                    usuario.id,
-                                    nuevoEstado
-                                )
-
-                            mensajeGeneral = if (resultado) {
-                                "Estado de cuenta actualizado."
-                            } else {
-                                "No se pudo cambiar el estado. Debe existir al menos un administrador activo."
-                            }
-                        }
-                    )
                 }
             }
         }
@@ -206,19 +339,33 @@ fun GestionUsuariosScreen(
 
             title = {
                 Text(
-                    if (usuarioEditando == null) {
+                    text = if (usuarioEditando == null) {
                         "Crear usuario"
                     } else {
                         "Editar usuario"
-                    }
+                    },
+                    style = MaterialTheme.typography.titleLarge
                 )
             },
 
             text = {
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+
+                    Text(
+                        text = if (usuarioEditando == null) {
+                            "Completa los datos para crear una cuenta."
+                        } else {
+                            "Modifica el nombre o correo de este usuario."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
                     OutlinedTextField(
                         value = nombre,
@@ -226,7 +373,7 @@ fun GestionUsuariosScreen(
                             nombre = it
                             mensajeError = null
                         },
-                        label = { Text("Nombre") },
+                        label = { Text("Nombre completo") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -237,7 +384,10 @@ fun GestionUsuariosScreen(
                             correo = it
                             mensajeError = null
                         },
-                        label = { Text("Correo") },
+                        label = { Text("Correo electrónico") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email
+                        ),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -250,23 +400,38 @@ fun GestionUsuariosScreen(
                                 contrasena = it
                                 mensajeError = null
                             },
-                            label = {
-                                Text("Contraseña (mínimo 8 caracteres)")
+                            label = { Text("Contraseña") },
+                            supportingText = {
+                                Text("Debe tener al menos 8 caracteres.")
                             },
+                            visualTransformation =
+                                PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password
+                            ),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        Text("Rol del usuario")
+                        Text(
+                            text = "Rol del nuevo usuario",
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
-                        Box {
+                        androidx.compose.foundation.layout.Box {
 
                             OutlinedButton(
                                 onClick = {
                                     menuRolesAbierto = true
-                                }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 52.dp)
                             ) {
-                                Text(rolSeleccionado.name)
+                                Text(
+                                    text = "${nombreRol(rolSeleccionado)}  ▾",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
                             }
 
                             DropdownMenu(
@@ -280,7 +445,7 @@ fun GestionUsuariosScreen(
 
                                     DropdownMenuItem(
                                         text = {
-                                            Text(rol.name)
+                                            Text(nombreRol(rol))
                                         },
                                         onClick = {
                                             rolSeleccionado = rol
@@ -294,10 +459,17 @@ fun GestionUsuariosScreen(
 
                     if (mensajeError != null) {
 
-                        Text(
-                            text = mensajeError ?: "",
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.errorContainer
+                        ) {
+                            Text(
+                                text = mensajeError ?: "",
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             },
@@ -344,7 +516,13 @@ fun GestionUsuariosScreen(
                         }
                     }
                 ) {
-                    Text("Guardar")
+                    Text(
+                        text = if (usuarioEditando == null) {
+                            "Crear cuenta"
+                        } else {
+                            "Guardar cambios"
+                        }
+                    )
                 }
             },
 
@@ -357,7 +535,10 @@ fun GestionUsuariosScreen(
                 ) {
                     Text("Cancelar")
                 }
-            }
+            },
+
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     }
 }
