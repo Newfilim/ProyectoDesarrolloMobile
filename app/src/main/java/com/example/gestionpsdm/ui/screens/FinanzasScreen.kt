@@ -16,23 +16,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-import com.example.gestionpsdm.repository.GastosRepository
-import com.example.gestionpsdm.repository.IngresosRepository
+import com.example.gestionpsdm.viewmodel.FinanzasViewModel
 
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
 fun FinanzasScreen(
+    viewModel: FinanzasViewModel,
     modifier: Modifier = Modifier
 ) {
 
-    val totalIngresos = IngresosRepository.obtenerTotalIngresos()
-    val totalGastos = GastosRepository.obtenerTotalGastos()
-    val balance = totalIngresos - totalGastos
+    val resumen by viewModel.resumen.collectAsState()
+
+    val totalIngresos = resumen.ingresos
+    val totalGastos = resumen.gastos
+    val balance = resumen.balance
 
     val formatoPesos = NumberFormat.getIntegerInstance(
         Locale("es", "CL")
@@ -65,53 +69,65 @@ fun FinanzasScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        TarjetaFinanzas(
-            titulo = "Ingresos registrados",
-            monto = "\$${formatoPesos.format(totalIngresos)}",
-            descripcion = "Dinero registrado como ingreso de la comunidad."
-        )
+        if (resumen.cargando) {
 
-        TarjetaFinanzas(
-            titulo = "Gastos registrados",
-            monto = "\$${formatoPesos.format(totalGastos)}",
-            descripcion = "Dinero destinado a gastos comunitarios."
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surfaceContainerHigh
+            Text(
+                text = "Cargando información financiera...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        ) {
 
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        } else {
+
+            TarjetaFinanzas(
+                titulo = "Ingresos registrados",
+                monto = "\$${formatoPesos.format(totalIngresos)}",
+                descripcion = "Dinero registrado como ingreso de la comunidad."
+            )
+
+            TarjetaFinanzas(
+                titulo = "Gastos registrados",
+                monto = "\$${formatoPesos.format(totalGastos)}",
+                descripcion = "Dinero destinado a gastos comunitarios."
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+
+                colors = CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                )
             ) {
 
-                Text(
-                    text = "Saldo de la comunidad",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
 
-                Text(
-                    text = "\$${formatoPesos.format(balance)}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                    Text(
+                        text = "Saldo de la comunidad",
+                        style = MaterialTheme.typography.titleLarge
+                    )
 
-                Text(
-                    text = estadoBalance,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                    Text(
+                        text = "\$${formatoPesos.format(balance)}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                Text(
-                    text = "Resultado de restar los gastos registrados a los ingresos registrados.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = estadoBalance,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Text(
+                        text = "Resultado de restar los gastos registrados a los ingresos registrados.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -127,6 +143,7 @@ fun TarjetaFinanzas(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
+
         colors = CardDefaults.cardColors(
             containerColor =
                 MaterialTheme.colorScheme.surfaceContainer

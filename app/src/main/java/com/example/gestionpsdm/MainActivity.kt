@@ -56,17 +56,40 @@ import com.example.gestionpsdm.viewmodel.LoginViewModel
 import com.example.gestionpsdm.viewmodel.GastoViewModel
 import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
-
+import androidx.lifecycle.lifecycleScope
+import com.example.gestionpsdm.data.local.ZarorDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import com.example.gestionpsdm.repository.GastosRoomRepository
+import com.example.gestionpsdm.viewmodel.GastoViewModelFactory
+import com.example.gestionpsdm.repository.IngresosRoomRepository
+import com.example.gestionpsdm.viewmodel.IngresoViewModel
+import com.example.gestionpsdm.viewmodel.IngresoViewModelFactory
+import com.example.gestionpsdm.viewmodel.FinanzasViewModel
+import com.example.gestionpsdm.viewmodel.FinanzasViewModelFactory
 class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
 
+        // Crear o abrir la base de datos local
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            val database = ZarorDatabase.obtenerDatabase(
+                applicationContext
+            )
+
+            // Abrir SQLite para ejecutar la inicialización
+            database.openHelper.writableDatabase
+        }
+
         setContent {
-            GestionPSDMTheme {
+
+        GestionPSDMTheme {
 
                 var idUsuarioActual by rememberSaveable {
                     mutableStateOf<Int?>(null)
@@ -377,9 +400,33 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         composable(Screen.Finanzas.route) {
-                            FinanzasScreen()
+
+                            val database = ZarorDatabase.obtenerDatabase(
+                                applicationContext
+                            )
+
+                            val gastosRepository = GastosRoomRepository(
+                                database.gastoDao()
+                            )
+
+                            val ingresosRepository = IngresosRoomRepository(
+                                database.ingresoDao()
+                            )
+
+                            val finanzasViewModel: FinanzasViewModel = viewModel(
+                                factory = FinanzasViewModelFactory(
+                                    gastosRepository = gastosRepository,
+                                    ingresosRepository = ingresosRepository
+                                )
+                            )
+
+                            FinanzasScreen(
+                                viewModel = finanzasViewModel
+                            )
                         }
+
 
                         composable(
                             route =
@@ -457,9 +504,33 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         composable(Screen.InformeFinanciero.route) {
-                            InformeFinancieroScreen()
+
+                            val database = ZarorDatabase.obtenerDatabase(
+                                applicationContext
+                            )
+
+                            val gastosRepository = GastosRoomRepository(
+                                database.gastoDao()
+                            )
+
+                            val ingresosRepository = IngresosRoomRepository(
+                                database.ingresoDao()
+                            )
+
+                            val finanzasViewModel: FinanzasViewModel = viewModel(
+                                factory = FinanzasViewModelFactory(
+                                    gastosRepository = gastosRepository,
+                                    ingresosRepository = ingresosRepository
+                                )
+                            )
+
+                            InformeFinancieroScreen(
+                                viewModel = finanzasViewModel
+                            )
                         }
+
 
                         composable(Screen.RevisarPagos.route) {
 
@@ -470,19 +541,47 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         composable(Screen.RegistrarGasto.route) {
 
-                            val gastoViewModel:
-                                    GastoViewModel = viewModel()
+                            val database = ZarorDatabase.obtenerDatabase(
+                                applicationContext
+                            )
+
+                            val repository = GastosRoomRepository(
+                                database.gastoDao()
+                            )
+
+                            val gastoViewModel: GastoViewModel = viewModel(
+                                factory = GastoViewModelFactory(repository)
+                            )
 
                             RegistrarGastoScreen(
                                 viewModel = gastoViewModel
                             )
                         }
 
+
+
                         composable(Screen.ConsultarIngresos.route) {
-                            ConsultarIngresosScreen()
+
+                            val database = ZarorDatabase.obtenerDatabase(
+                                applicationContext
+                            )
+
+                            val repository = IngresosRoomRepository(
+                                database.ingresoDao()
+                            )
+
+                            val ingresoViewModel: IngresoViewModel = viewModel(
+                                factory = IngresoViewModelFactory(repository)
+                            )
+
+                            ConsultarIngresosScreen(
+                                viewModel = ingresoViewModel
+                            )
                         }
+
                     }
                 }
             }

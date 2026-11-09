@@ -16,24 +16,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-import com.example.gestionpsdm.repository.GastosRepository
-import com.example.gestionpsdm.repository.IngresosRepository
+import com.example.gestionpsdm.viewmodel.FinanzasViewModel
 
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.example.gestionpsdm.ui.components.GraficoGastosCategoria
+import com.example.gestionpsdm.ui.components.GraficoIngresos
+import com.example.gestionpsdm.ui.components.GraficoBalanceCircular
+
 @Composable
 fun InformeFinancieroScreen(
+    viewModel: FinanzasViewModel,
     modifier: Modifier = Modifier
 ) {
 
-    val totalIngresos = IngresosRepository.obtenerTotalIngresos()
-    val totalGastos = GastosRepository.obtenerTotalGastos()
+    val resumen by viewModel.resumen.collectAsState()
+    val gastosPorCategoria by viewModel.gastosPorCategoria.collectAsState()
+    val ingresosRegistrados by viewModel.ingresosRegistrados.collectAsState()
 
-    val balance = totalIngresos - totalGastos
+    val totalIngresos = resumen.ingresos
+    val totalGastos = resumen.gastos
+    val balance = resumen.balance
 
     val formatoPesos = NumberFormat.getIntegerInstance(
         Locale("es", "CL")
@@ -77,64 +86,91 @@ fun InformeFinancieroScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        IndicadorFinanciero(
-            titulo = "Ingresos registrados",
-            monto = "\$${formatoPesos.format(totalIngresos)}",
-            descripcion = "Dinero registrado como ingreso de la comunidad."
-        )
+        if (resumen.cargando) {
 
-        IndicadorFinanciero(
-            titulo = "Gastos registrados",
-            monto = "\$${formatoPesos.format(totalGastos)}",
-            descripcion = "Dinero utilizado en gastos de la comunidad."
-        )
-
-        // Balance destacado
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-
-            colors = CardDefaults.cardColors(
-                containerColor =
-                    MaterialTheme.colorScheme.surfaceContainerHigh
+            Text(
+                text = "Cargando información financiera...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        ) {
 
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+        } else {
 
-                Text(
-                    text = "Balance neto",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+            IndicadorFinanciero(
+                titulo = "Ingresos registrados",
+                monto = "\$${formatoPesos.format(totalIngresos)}",
+                descripcion = "Dinero registrado como ingreso de la comunidad."
+            )
+
+            IndicadorFinanciero(
+                titulo = "Gastos registrados",
+                monto = "\$${formatoPesos.format(totalGastos)}",
+                descripcion = "Dinero utilizado en gastos de la comunidad."
+            )
+
+            // Balance destacado
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+
+                colors = CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.surfaceContainerHigh
                 )
+            )
+            {
 
-                Text(
-                    text = "\$${formatoPesos.format(balance)}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
 
-                Text(
-                    text = estadoBalance,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                    Text(
+                        text = "Balance neto",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                Text(
-                    text = explicacionBalance,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = "\$${formatoPesos.format(balance)}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                Text(
-                    text = "Cálculo: ingresos registrados menos gastos registrados.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = estadoBalance,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = explicacionBalance,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = "Cálculo: ingresos registrados menos gastos registrados.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+            GraficoGastosCategoria(
+                gastos = gastosPorCategoria
+            )
+
+            GraficoIngresos(
+                ingresos = ingresosRegistrados,
+                totalIngresos = totalIngresos
+            )
+
+            GraficoBalanceCircular(
+                ingresos = totalIngresos,
+                gastos = totalGastos
+            )
+
+
         }
     }
 }
@@ -181,5 +217,3 @@ private fun IndicadorFinanciero(
         }
     }
 }
-
-

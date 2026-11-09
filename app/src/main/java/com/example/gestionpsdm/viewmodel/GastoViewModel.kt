@@ -2,19 +2,22 @@
 package com.example.gestionpsdm.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.gestionpsdm.model.CategoriaGasto
 import com.example.gestionpsdm.model.GastoErrores
 import com.example.gestionpsdm.model.GastoFormularioUiState
+import com.example.gestionpsdm.repository.GastosRoomRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.example.gestionpsdm.model.Gasto
-import com.example.gestionpsdm.repository.GastosRepository
 
-class GastoViewModel : ViewModel() {
+class GastoViewModel(
+    private val repository: GastosRoomRepository
+) : ViewModel() {
 
     private val _estado = MutableStateFlow(GastoFormularioUiState())
     private val _errores = MutableStateFlow(GastoErrores())
@@ -22,36 +25,62 @@ class GastoViewModel : ViewModel() {
     val estado: StateFlow<GastoFormularioUiState> = _estado
     val errores: StateFlow<GastoErrores> = _errores
 
+    private val _guardando = MutableStateFlow(false)
+    val guardando: StateFlow<Boolean> = _guardando
+
+    private val _gastoGuardado = MutableStateFlow(false)
+    val gastoGuardado: StateFlow<Boolean> = _gastoGuardado
+
+    private val _errorGuardado = MutableStateFlow<String?>(null)
+    val errorGuardado: StateFlow<String?> = _errorGuardado
+
+    fun limpiarMensajeGuardado() {
+        _gastoGuardado.value = false
+        _errorGuardado.value = null
+    }
+
     fun actualizarDescripcion(nuevaDescripcion: String) {
+        if (_guardando.value) return
+
         _estado.value = _estado.value.copy(
             descripcion = nuevaDescripcion,
             formularioValido = false
         )
         _errores.value = _errores.value.copy(descripcion = null)
+        limpiarMensajeGuardado()
     }
 
     fun actualizarMonto(nuevoMonto: String) {
+        if (_guardando.value) return
+
         _estado.value = _estado.value.copy(
             monto = nuevoMonto,
             formularioValido = false
         )
         _errores.value = _errores.value.copy(monto = null)
+        limpiarMensajeGuardado()
     }
 
     fun actualizarFecha(nuevaFecha: String) {
+        if (_guardando.value) return
+
         _estado.value = _estado.value.copy(
             fecha = nuevaFecha,
             formularioValido = false
         )
         _errores.value = _errores.value.copy(fecha = null)
+        limpiarMensajeGuardado()
     }
 
     fun actualizarCategoria(nuevaCategoria: CategoriaGasto) {
+        if (_guardando.value) return
+
         _estado.value = _estado.value.copy(
             categoria = nuevaCategoria,
             formularioValido = false
         )
         _errores.value = _errores.value.copy(categoria = null)
+        limpiarMensajeGuardado()
     }
 
     fun validarFormulario(): Boolean {
@@ -63,14 +92,14 @@ class GastoViewModel : ViewModel() {
         var errorFecha: String? = null
         var errorCategoria: String? = null
 
-        // Validar descripción
+        // Descripción
         if (datos.descripcion.isBlank()) {
             errorDescripcion = "La descripción es obligatoria"
         } else if (datos.descripcion.trim().length < 5) {
             errorDescripcion = "Ingrese al menos 5 caracteres"
         }
 
-        // Validar monto
+        // Monto
         val montoNumerico = datos.monto.toIntOrNull()
 
         if (datos.monto.isBlank()) {
@@ -81,7 +110,7 @@ class GastoViewModel : ViewModel() {
             errorMonto = "El monto debe ser mayor que cero"
         }
 
-        // Validar fecha
+        // Fecha
         val fechaIngresada = convertirFecha(datos.fecha)
 
         if (datos.fecha.isBlank()) {
@@ -101,7 +130,7 @@ class GastoViewModel : ViewModel() {
             }
         }
 
-        // Validar categoría
+        // Categoría
         if (datos.categoria == null) {
             errorCategoria = "Seleccione una categoría"
         }
@@ -125,38 +154,46 @@ class GastoViewModel : ViewModel() {
         return valido
     }
 
+    fun registrarGasto() {
 
-    fun registrarGasto(): Boolean {
+        // Evita registros duplicados por pulsaciones repetidas.
+        if (_guardando.value) return
+
+        limpiarMensajeGuardado()
 
         if (!validarFormulario()) {
-            return false
+            return
         }
 
         val datos = _estado.value
+        val monto = datos.monto.toIntOrNull() ?: return
+        val categoria = datos.categoria ?: return
 
-        val monto = datos.monto.toIntOrNull() ?: return false
-        val categoria = datos.categoria ?: return false
+        _guardando.value = true
 
-        val ultimoId = GastosRepository.gastos
-            .map { it.id }
-            .maxOrNull() ?: 0
+        viewModelScope.launch {
+            try {
+                repository.agregarGasto(
+                    descripcion = datos.descripcion.trim(),
+                    monto = monto,
+                    fecha = datos.fecha,
+                    categoria = categoria
+                )
 
-        val nuevoGasto = Gasto(
-            id = ultimoId + 1,
-            descripcion = datos.descripcion.trim(),
-            monto = monto,
-            fecha = datos.fecha,
-            categoria = categoria
-        )
+                // Limpiar después de guardar correctamente en SQLite.
+                _estado.value = GastoFormularioUiState()
+                _errores.value = GastoErrores()
+                _gastoGuardado.value = true
 
-        GastosRepository.agregarGasto(nuevoGasto)
+            } catch (e: Exception) {
+                _errorGuardado.value =
+                    "No se pudo guardar el gasto. Inténtalo nuevamente."
 
-        _estado.value = GastoFormularioUiState()
-        _errores.value = GastoErrores()
-
-        return true
+            } finally {
+                _guardando.value = false
+            }
+        }
     }
-
 
     private fun convertirFecha(fecha: String): Date? {
 

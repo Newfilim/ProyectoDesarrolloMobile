@@ -48,12 +48,11 @@ fun RegistrarGastoScreen(
 
     val estado by viewModel.estado.collectAsState()
     val errores by viewModel.errores.collectAsState()
+    val guardando by viewModel.guardando.collectAsState()
+    val mensajeGuardado by viewModel.gastoGuardado.collectAsState()
+    val errorGuardado by viewModel.errorGuardado.collectAsState()
 
     var menuAbierto by remember {
-        mutableStateOf(false)
-    }
-
-    var mensajeGuardado by remember {
         mutableStateOf(false)
     }
 
@@ -111,7 +110,7 @@ fun RegistrarGastoScreen(
 
                     onValueChange = {
                         viewModel.actualizarDescripcion(it)
-                        mensajeGuardado = false
+
                     },
 
                     label = {
@@ -151,7 +150,7 @@ fun RegistrarGastoScreen(
 
                     onValueChange = {
                         viewModel.actualizarMonto(it)
-                        mensajeGuardado = false
+
                     },
 
                     label = {
@@ -196,7 +195,7 @@ fun RegistrarGastoScreen(
 
                     onValueChange = {
                         viewModel.actualizarFecha(it)
-                        mensajeGuardado = false
+
                     },
 
                     label = {
@@ -282,7 +281,7 @@ fun RegistrarGastoScreen(
                                         categoria
                                     )
 
-                                    mensajeGuardado = false
+
                                     menuAbierto = false
                                 }
                             )
@@ -296,11 +295,13 @@ fun RegistrarGastoScreen(
 
         // BOTON PARA REGISTRAR
 
+
         Button(
             onClick = {
-
-                mensajeGuardado = viewModel.registrarGasto()
+                viewModel.registrarGasto()
             },
+
+            enabled = !guardando,
 
             modifier = Modifier
                 .fillMaxWidth()
@@ -310,10 +311,17 @@ fun RegistrarGastoScreen(
         ) {
 
             Text(
-                text = "✓ Guardar gasto",
+                text = if (guardando) {
+                    "Guardando gasto..."
+                } else {
+                    "✓ Guardar gasto"
+                },
+
                 style = MaterialTheme.typography.labelLarge
             )
         }
+        MensajeError(errorGuardado)
+
 
         // MENSAJE DE CONFIRMACION
 

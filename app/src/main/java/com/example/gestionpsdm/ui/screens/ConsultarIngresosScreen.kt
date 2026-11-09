@@ -36,11 +36,12 @@ import com.example.gestionpsdm.viewmodel.IngresoViewModel
 
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun ConsultarIngresosScreen(
-    modifier: Modifier = Modifier,
-    viewModel: IngresoViewModel = viewModel()
+    viewModel: IngresoViewModel,
+    modifier: Modifier = Modifier
 ) {
 
     var descripcion by remember {
@@ -63,8 +64,9 @@ fun ConsultarIngresosScreen(
         mutableStateOf(false)
     }
 
-    val ingresos = viewModel.obtenerIngresos()
-    val totalIngresos = viewModel.obtenerTotalIngresos()
+    val ingresos by viewModel.ingresos.collectAsState()
+    val totalIngresos by viewModel.totalIngresos.collectAsState()
+    val registrando by viewModel.registrando.collectAsState()
 
     // Formato de números para Chile: 25000 -> 25.000
     val formatoPesos = NumberFormat.getIntegerInstance(
@@ -277,30 +279,34 @@ fun ConsultarIngresosScreen(
 
         item {
 
+
             Button(
                 onClick = {
 
-                    val error = viewModel.registrarIngreso(
+                    viewModel.registrarIngreso(
                         descripcion = descripcion,
                         monto = monto,
                         fecha = fecha
-                    )
+                    ) { error ->
 
-                    if (error == null) {
+                        if (error == null) {
 
-                        descripcion = ""
-                        monto = ""
-                        fecha = ""
+                            descripcion = ""
+                            monto = ""
+                            fecha = ""
 
-                        mensaje = "Ingreso registrado correctamente."
-                        esError = false
+                            mensaje = "Ingreso registrado correctamente."
+                            esError = false
 
-                    } else {
+                        } else {
 
-                        mensaje = error
-                        esError = true
+                            mensaje = error
+                            esError = true
+                        }
                     }
                 },
+
+                enabled = !registrando,
 
                 modifier = Modifier
                     .fillMaxWidth()
@@ -310,10 +316,15 @@ fun ConsultarIngresosScreen(
             ) {
 
                 Text(
-                    text = "✓ Guardar ingreso",
+                    text = if (registrando) {
+                        "Guardando ingreso..."
+                    } else {
+                        "✓ Guardar ingreso"
+                    },
                     style = MaterialTheme.typography.labelLarge
                 )
             }
+
         }
 
         // MENSAJE DE RESULTADO

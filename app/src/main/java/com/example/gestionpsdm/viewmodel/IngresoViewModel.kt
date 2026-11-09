@@ -2,42 +2,72 @@
 package com.example.gestionpsdm.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.gestionpsdm.repository.Ingreso
-import com.example.gestionpsdm.repository.IngresosRepository
+import com.example.gestionpsdm.repository.IngresosRoomRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class IngresoViewModel : ViewModel() {
+class IngresoViewModel(
+    private val repository: IngresosRoomRepository
+) : ViewModel() {
 
-    fun obtenerIngresos(): List<Ingreso> {
-        return IngresosRepository.ingresos
-    }
+    // Ingresos observados desde Room
+    val ingresos: StateFlow<List<Ingreso>> =
+        repository.obtenerIngresos().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    fun obtenerTotalIngresos(): Long {
-        return IngresosRepository.obtenerTotalIngresos()
-    }
+    // Total actualizado cuando cambian los datos
+    val totalIngresos: StateFlow<Long> =
+        repository.obtenerTotalIngresos().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0L
+        )
+
+    private val _registrando = MutableStateFlow(false)
+    val registrando: StateFlow<Boolean> = _registrando
 
     fun registrarIngreso(
         descripcion: String,
         monto: String,
-        fecha: String
-    ): String? {
+        fecha: String,
+        onResultado: (String?) -> Unit
+    ) {
 
-        if (descripcion.isBlank()) {
-            return "La descripción es obligatoria."
+        if (_registrando.value) {
+            return
         }
 
+        // Validar descripción
+        if (descripcion.isBlank()) {
+            onResultado("La descripción es obligatoria.")
+            return
+        }
+
+        // Validar monto
         val montoNumerico = monto.toIntOrNull()
 
         if (montoNumerico == null || montoNumerico <= 0) {
-            return "Ingresa un monto entero mayor que cero."
+            onResultado("Ingresa un monto entero mayor que cero.")
+            return
         }
 
+        // Validar fecha
         val patronFecha = Regex("""\d{2}/\d{2}/\d{4}""")
 
         if (!patronFecha.matches(fecha)) {
-            return "La fecha debe tener formato DD/MM/AAAA."
+            onResultado("La fecha debe tener formato DD/MM/AAAA.")
+            return
         }
 
         val formato = SimpleDateFormat(
@@ -54,23 +84,39 @@ class IngresoViewModel : ViewModel() {
         }
 
         if (fechaIngresada == null) {
-            return "Ingresa una fecha válida."
+            onResultado("Ingresa una fecha válida.")
+            return
         }
 
         if (fechaIngresada.after(Date())) {
-            return "No puedes registrar ingresos con fecha futura."
+            onResultado("No puedes registrar ingresos con fecha futura.")
+            return
         }
 
-        val resultado = IngresosRepository.agregarIngreso(
-            descripcion = descripcion.trim(),
-            monto = montoNumerico,
-            fecha = fecha
-        )
+        // Registrar en SQLite
+        _registrando.value = true
 
-        if (!resultado) {
-            return "No se pudo registrar el ingreso."
+        viewModelScope.launch {
+
+            try {
+                repository.agregarIngreso(
+                    descripcion = descripcion.trim(),
+                    monto = montoNumerico,
+                    fecha = fecha
+                )
+
+                // null significa registro exitoso
+                onResultado(null)
+
+            } catch (e: Exception) {
+
+                onResultado(
+                    "No se pudo guardar el ingreso. Inténtalo nuevamente."
+                )
+
+            } finally {
+                _registrando.value = false
+            }
         }
-
-        return null
     }
 }
