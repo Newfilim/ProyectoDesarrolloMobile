@@ -1,4 +1,3 @@
-
 package com.example.gestionpsdm.ui.screens
 
 import android.net.Uri
@@ -25,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.gestionpsdm.model.Espacio
 
 import com.example.gestionpsdm.model.EstadoPago
 import com.example.gestionpsdm.model.EstadoReserva
@@ -42,18 +43,24 @@ import com.example.gestionpsdm.repository.ReservasDemoRepository
 import com.example.gestionpsdm.utils.crearArchivoComprobante
 import com.example.gestionpsdm.utils.crearUriComprobante
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
+import com.example.gestionpsdm.viewmodel.GestionReservasViewModel
 
 import java.io.File
+
 
 @Composable
 fun MisReservasScreen(
     comprobantesViewModel: ComprobantesViewModel,
+    reservasViewModel: GestionReservasViewModel,
+    espacios: List<Espacio>,
     idUsuario: Int,
     modifier: Modifier = Modifier
 ) {
 
     // Mostrar solo las reservas del residente autenticado.
-    val reservas = ReservasDemoRepository.reservas.filter {
+    val todasLasReservas by reservasViewModel.reservas.collectAsState()
+
+    val reservas = todasLasReservas.filter {
         it.idUsuario == idUsuario
     }
 
@@ -162,7 +169,7 @@ fun MisReservasScreen(
             key = { reserva -> reserva.id }
         ) { reserva ->
 
-            val espacio = EspaciosDemoRepository.espacios.find {
+            val espacio = espacios.find {
                 it.id == reserva.idEspacio
             }
 

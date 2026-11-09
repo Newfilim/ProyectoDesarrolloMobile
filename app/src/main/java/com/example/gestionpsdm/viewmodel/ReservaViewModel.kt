@@ -9,13 +9,18 @@ import com.example.gestionpsdm.repository.ReservasDemoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.example.gestionpsdm.model.ReservaErrores
+import com.example.gestionpsdm.repository.ReservasRoomRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.text.ParseException
 import java.util.Calendar
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
-class ReservaViewModel : ViewModel() {
+class ReservaViewModel(
+    private val repository: ReservasRoomRepository
+) : ViewModel() {
 
     private val _estado = MutableStateFlow(
         ReservaFormularioUiState()
@@ -27,8 +32,9 @@ class ReservaViewModel : ViewModel() {
 
     val estado: StateFlow<ReservaFormularioUiState> = _estado
     val errores: StateFlow<ReservaErrores> = _errores
+    private val _guardando = MutableStateFlow(false)
+    val guardando: StateFlow<Boolean> = _guardando
 
-    private val reservas = ReservasDemoRepository.reservas
     fun actualizarFecha(nuevaFecha: String) {
         _estado.value = _estado.value.copy(
             fecha = nuevaFecha
@@ -270,24 +276,66 @@ class ReservaViewModel : ViewModel() {
         return true
     }
 
-    fun registrarReserva(idUsuario: Int, idEspacio: Int): Boolean{
-    if(validarFormulario()){
-        val ultimoId = reservas.map { it.id }.maxOrNull() ?:0
-        val nuevoId = ultimoId + 1
-        val reserva = _estado.value
-        val nuevaReserva= Reserva(
-            id = nuevoId,
-            idUsuario = idUsuario,
-            idEspacio = idEspacio,
-            fecha = reserva.fecha,
-            horaInicio = reserva.horaInicio,
-            horaFin = reserva.horaFin,
-            estado = EstadoReserva.PENDIENTE
-        )
 
-        ReservasDemoRepository.agregarReserva(nuevaReserva)
-        return true
+    fun registrarReserva(
+        idUsuario: Int,
+        idEspacio: Int,
+        onResultado: (Boolean, String) -> Unit
+    ) {
+
+        if (_guardando.value) {
+            return
+        }
+
+        if (!validarFormulario()) {
+            onResultado(false, "Revisa los datos del formulario")
+            return
+        }
+
+        val datos = _estado.value
+
+        _guardando.value = true
+
+        viewModelScope.launch {
+
+            try {
+                val registrado = repository.registrarReserva(
+                    idUsuario = idUsuario,
+                    idEspacio = idEspacio,
+                    fecha = datos.fecha,
+                    horaInicio = datos.horaInicio,
+                    horaFin = datos.horaFin
+                )
+
+                if (registrado) {
+
+                    _estado.value = ReservaFormularioUiState()
+                    _errores.value = ReservaErrores()
+
+                    onResultado(
+                        true,
+                        "Solicitud registrada correctamente"
+                    )
+
+                } else {
+
+                    onResultado(
+                        false,
+                        "No se pudo registrar. Comprueba que el espacio esté habilitado."
+                    )
+                }
+
+            } catch (e: Exception) {
+
+                onResultado(
+                    false,
+                    "Error al guardar la reserva"
+                )
+
+            } finally {
+                _guardando.value = false
+            }
+        }
     }
-        return false
-    }
+
 }

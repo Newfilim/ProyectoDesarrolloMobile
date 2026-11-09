@@ -18,23 +18,28 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.gestionpsdm.model.Espacio
 import com.example.gestionpsdm.model.EstadoReserva
 import com.example.gestionpsdm.repository.ReservasDemoRepository
 import com.example.gestionpsdm.repository.UsuariosDemoRepository
 import com.example.gestionpsdm.repository.EspaciosDemoRepository
+import com.example.gestionpsdm.viewmodel.GestionReservasViewModel
 
 @Composable
 fun GestionReservasScreen(
+    viewModel: GestionReservasViewModel,
+    espacios: List<Espacio>,
     modifier: Modifier = Modifier
 ) {
 
-    val reservas = ReservasDemoRepository.reservas
+    val reservas by viewModel.reservas.collectAsState()
 
     var idReservaConError by remember {
         mutableStateOf<Int?>(null)
@@ -79,8 +84,10 @@ fun GestionReservasScreen(
             val usuario = UsuariosDemoRepository.obtenerUsuarios()
                 .find { it.id == reserva.idUsuario }
 
-            val espacio = EspaciosDemoRepository.espacios
-                .find { it.id == reserva.idEspacio }
+            val espacio = espacios.find {
+                it.id == reserva.idEspacio
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -156,17 +163,16 @@ fun GestionReservasScreen(
                         // Aprobar solicitud
                         Button(
                             onClick = {
+                                viewModel.cambiarEstado(
+                                    reserva.id,
+                                    EstadoReserva.APROBADA
+                                ) { resultado ->
 
-                                val resultado =
-                                    ReservasDemoRepository.cambiarEstado(
-                                        reserva.id,
-                                        EstadoReserva.APROBADA
-                                    )
-
-                                if (resultado) {
-                                    idReservaConError = null
-                                } else {
-                                    idReservaConError = reserva.id
+                                    if (resultado) {
+                                        idReservaConError = null
+                                    } else {
+                                        idReservaConError = reserva.id
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -184,13 +190,17 @@ fun GestionReservasScreen(
                         // Rechazar solicitud
                         OutlinedButton(
                             onClick = {
-
-                                ReservasDemoRepository.cambiarEstado(
+                                viewModel.cambiarEstado(
                                     reserva.id,
                                     EstadoReserva.RECHAZADA
-                                )
+                                ) { resultado ->
 
-                                idReservaConError = null
+                                    if (resultado) {
+                                        idReservaConError = null
+                                    } else {
+                                        idReservaConError = reserva.id
+                                    }
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

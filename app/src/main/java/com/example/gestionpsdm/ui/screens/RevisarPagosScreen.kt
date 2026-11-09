@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -33,24 +32,21 @@ import coil.compose.AsyncImage
 
 import com.example.gestionpsdm.model.Espacio
 import com.example.gestionpsdm.model.EstadoPago
-import com.example.gestionpsdm.repository.ReservasDemoRepository
+import com.example.gestionpsdm.model.Reserva
 import com.example.gestionpsdm.repository.UsuariosDemoRepository
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
 
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun RevisarPagosScreen(
     comprobantesViewModel: ComprobantesViewModel,
     espacios: List<Espacio>,
+    reservas: List<Reserva>,
     modifier: Modifier = Modifier
 ) {
 
     val comprobantes = comprobantesViewModel.comprobantesPorReserva
     val listaComprobantes = comprobantes.toList()
-
-    val alcance = rememberCoroutineScope()
 
     var idPagoProcesando by remember {
         mutableStateOf<Int?>(null)
@@ -98,7 +94,7 @@ fun RevisarPagosScreen(
                 val idReserva = elemento.first
                 val imagen = elemento.second
 
-                val reserva = ReservasDemoRepository.reservas.find {
+                val reserva = reservas.find {
                     it.id == idReserva
                 }
 
@@ -247,16 +243,10 @@ fun RevisarPagosScreen(
 
                                     idPagoProcesando = idReserva
 
-                                    alcance.launch {
-
-                                        delay(800)
-
-                                        comprobantesViewModel
-                                            .actualizarEstadoPago(
-                                                idReserva,
-                                                EstadoPago.CONFIRMADO
-                                            )
-
+                                    comprobantesViewModel.actualizarEstadoPago(
+                                        idReserva,
+                                        EstadoPago.CONFIRMADO
+                                    ) { resultado ->
                                         idPagoProcesando = null
                                     }
                                 },
@@ -339,3 +329,4 @@ fun RevisarPagosScreen(
         }
     }
 }
+

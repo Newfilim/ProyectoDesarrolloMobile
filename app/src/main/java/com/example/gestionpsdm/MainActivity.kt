@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -58,15 +59,25 @@ import com.example.gestionpsdm.viewmodel.PreferenciasViewModel
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
 import androidx.lifecycle.lifecycleScope
 import com.example.gestionpsdm.data.local.ZarorDatabase
+import com.example.gestionpsdm.repository.EspaciosRoomRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.gestionpsdm.repository.GastosRoomRepository
 import com.example.gestionpsdm.viewmodel.GastoViewModelFactory
 import com.example.gestionpsdm.repository.IngresosRoomRepository
+import com.example.gestionpsdm.repository.ReservasRoomRepository
+import com.example.gestionpsdm.repository.PagosRoomRepository
+import com.example.gestionpsdm.viewmodel.ComprobantesViewModelFactory
+import com.example.gestionpsdm.viewmodel.EspaciosViewModel
+import com.example.gestionpsdm.viewmodel.EspaciosViewModelFactory
 import com.example.gestionpsdm.viewmodel.IngresoViewModel
 import com.example.gestionpsdm.viewmodel.IngresoViewModelFactory
 import com.example.gestionpsdm.viewmodel.FinanzasViewModel
 import com.example.gestionpsdm.viewmodel.FinanzasViewModelFactory
+import com.example.gestionpsdm.viewmodel.GestionReservasViewModel
+import com.example.gestionpsdm.viewmodel.GestionReservasViewModelFactory
+import com.example.gestionpsdm.viewmodel.ReservaViewModelFactory
+
 class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -89,7 +100,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
 
-        GestionPSDMTheme {
+            GestionPSDMTheme {
 
                 var idUsuarioActual by rememberSaveable {
                     mutableStateOf<Int?>(null)
@@ -107,10 +118,13 @@ class MainActivity : ComponentActivity() {
                     ?.destination
                     ?.route ?: Screen.Login.route
 
-                val comprobantesViewModel:
-                        ComprobantesViewModel = viewModel()
+                val pagosDatabase = ZarorDatabase.obtenerDatabase(applicationContext)
+                val pagosRepository = PagosRoomRepository(pagosDatabase, applicationContext)
+                val comprobantesViewModel: ComprobantesViewModel = viewModel(
+                    factory = ComprobantesViewModelFactory(pagosRepository)
+                )
 
-                val espacios = EspaciosDemoRepository.espacios
+                val espaciosDemo = EspaciosDemoRepository.espacios
 
                 // Pantalla principal correspondiente a cada perfil.
                 val rutaInicio = if (
@@ -382,17 +396,26 @@ class MainActivity : ComponentActivity() {
 
                         composable(Screen.Espacios.route) {
 
-                            val preferenciasViewModel:
-                                    PreferenciasViewModel = viewModel()
+                            val preferenciasViewModel: PreferenciasViewModel = viewModel()
+
+                            val espacioDao = ZarorDatabase
+                                .obtenerDatabase(applicationContext)
+                                .espacioDao()
+
+                            val repository = EspaciosRoomRepository(espacioDao)
+
+                            val factory = EspaciosViewModelFactory(repository)
+
+                            val espaciosViewModel: EspaciosViewModel = viewModel(
+                                factory = factory
+                            )
+
+                            val espacios by espaciosViewModel.espacios.collectAsState()
 
                             EspaciosScreen(
-                                preferenciasViewModel =
-                                    preferenciasViewModel,
-
+                                preferenciasViewModel = preferenciasViewModel,
                                 espacios = espacios,
-
                                 onSolicitarReserva = { idEspacio ->
-
                                     navController.navigate(
                                         "${Screen.SolicitarReserva.route}/${idEspacio}"
                                     )
@@ -429,30 +452,34 @@ class MainActivity : ComponentActivity() {
 
 
                         composable(
-                            route =
-                                "${Screen.SolicitarReserva.route}/{idEspacio}"
+                            route = "${Screen.SolicitarReserva.route}/{idEspacio}"
                         ) { entrada ->
 
                             val idEspacio = entrada.arguments
                                 ?.getString("idEspacio")
                                 ?.toIntOrNull()
 
-                            val reservaViewModel:
-                                    ReservaViewModel = viewModel()
-
                             val usuario = usuarioActual
 
-                            if (
-                                idEspacio != null &&
-                                usuario != null
-                            ) {
+                            if (idEspacio != null && usuario != null) {
+                                val database = ZarorDatabase.obtenerDatabase(
+                                    applicationContext
+                                )
+
+                                val reservasRepository = ReservasRoomRepository(database)
+                                val reservaFactory = ReservaViewModelFactory(reservasRepository)
+                                val reservaViewModel: ReservaViewModel = viewModel(
+                                    factory = reservaFactory
+                                )
 
                                 SolicitarReservaScreen(
-                                    reservaViewModel,
+                                    viewModel = reservaViewModel,
                                     modifier = Modifier.fillMaxWidth(),
-                                    usuario.id,
-                                    idEspacio
+                                    idUsuario = usuario.id,
+                                    idEspacio = idEspacio
                                 )
+                            } else {
+                                Text("No se encontró una sesión válida o un espacio válido.")
                             }
                         }
 
@@ -461,7 +488,37 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Screen.GestionReservas.route) {
-                            GestionReservasScreen()
+                            val database = ZarorDatabase.obtenerDatabase(
+                                applicationContext
+                            )
+
+                            val reservasRepository = ReservasRoomRepository(database)
+
+                            val reservasFactory = GestionReservasViewModelFactory(
+                                reservasRepository
+                            )
+
+                            val reservasViewModel: GestionReservasViewModel = viewModel(
+                                factory = reservasFactory
+                            )
+
+                            val espaciosRepository = EspaciosRoomRepository(
+                                database.espacioDao()
+                            )
+
+                            val espaciosFactory = EspaciosViewModelFactory(
+                                espaciosRepository
+                            )
+
+                            val espaciosViewModel: EspaciosViewModel = viewModel(
+                                factory = espaciosFactory
+                            )
+
+                            val espacios by espaciosViewModel.espacios.collectAsState()
+                            GestionReservasScreen(
+                                viewModel = reservasViewModel,
+                                espacios = espacios
+                            )
                         }
 
                         composable(Screen.Tesoreria.route) {
@@ -472,34 +529,61 @@ class MainActivity : ComponentActivity() {
 
                             val usuario = usuarioActual
 
-                            if (
-                                usuario != null &&
-                                usuario.rol == RolUsuario.RESIDENTE
-                            ) {
+                            if (usuario != null && usuario.rol == RolUsuario.RESIDENTE) {
+                                val database = ZarorDatabase.obtenerDatabase(
+                                    applicationContext
+                                )
+
+                                val reservasRepository = ReservasRoomRepository(database)
+                                val reservasFactory = GestionReservasViewModelFactory(
+                                    reservasRepository
+                                )
+                                val reservasViewModel: GestionReservasViewModel = viewModel(
+                                    factory = reservasFactory
+                                )
+
+                                val espaciosRepository = EspaciosRoomRepository(
+                                    database.espacioDao()
+                                )
+                                val espaciosFactory = EspaciosViewModelFactory(
+                                    espaciosRepository
+                                )
+                                val espaciosViewModel: EspaciosViewModel = viewModel(
+                                    factory = espaciosFactory
+                                )
+                                val espacios by espaciosViewModel.espacios.collectAsState()
+
                                 MisReservasScreen(
-                                    comprobantesViewModel =
-                                        comprobantesViewModel,
+                                    comprobantesViewModel = comprobantesViewModel,
+                                    reservasViewModel = reservasViewModel,
+                                    espacios = espacios,
                                     idUsuario = usuario.id
                                 )
                             } else {
-                                Text(
-                                    "No se encontró una sesión de residente activa."
-                                )
+                                Text("No se encontró una sesión de residente activa.")
                             }
                         }
 
                         composable(Screen.GestionEspacios.route) {
+                            val espacioDao = ZarorDatabase
+                                .obtenerDatabase(applicationContext)
+                                .espacioDao()
+                            val repository = EspaciosRoomRepository(espacioDao)
+
+                            val factory = EspaciosViewModelFactory(repository)
+
+                            val viewModel: EspaciosViewModel = viewModel(
+                                factory = factory
+                            )
+
+                            val espacios by viewModel.espacios.collectAsState()
 
                             GestionEspaciosScreen(
                                 espacios = espacios,
 
                                 onCambiarEstado = { id, habilitado ->
 
-                                    EspaciosDemoRepository
-                                        .cambiarEstadoEspacio(
-                                            id,
-                                            habilitado
-                                        )
+                                    viewModel.cambiarEstado(id, habilitado)
                                 }
                             )
                         }
@@ -533,11 +617,21 @@ class MainActivity : ComponentActivity() {
 
 
                         composable(Screen.RevisarPagos.route) {
-
+                            val database = ZarorDatabase.obtenerDatabase(applicationContext)
+                            val reservasRepository = ReservasRoomRepository(database)
+                            val reservasViewModel: GestionReservasViewModel = viewModel(
+                                factory = GestionReservasViewModelFactory(reservasRepository)
+                            )
+                            val reservas by reservasViewModel.reservas.collectAsState()
+                            val espaciosRepository = EspaciosRoomRepository(database.espacioDao())
+                            val espaciosViewModel: EspaciosViewModel = viewModel(
+                                factory = EspaciosViewModelFactory(espaciosRepository)
+                            )
+                            val espacios by espaciosViewModel.espacios.collectAsState()
                             RevisarPagosScreen(
-                                comprobantesViewModel =
-                                    comprobantesViewModel,
-                                espacios = espacios
+                                comprobantesViewModel = comprobantesViewModel,
+                                espacios = espacios,
+                                reservas = reservas
                             )
                         }
 

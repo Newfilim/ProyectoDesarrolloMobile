@@ -10,9 +10,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [
         GastoEntity::class,
-        IngresoEntity::class
+        IngresoEntity::class,
+        EspacioEntity::class,
+        ReservaEntity::class,
+        PagoEntity::class
     ],
-    version = 1,
+    version = 4,
     exportSchema = false
 )
 abstract class ZarorDatabase : RoomDatabase() {
@@ -20,6 +23,12 @@ abstract class ZarorDatabase : RoomDatabase() {
     abstract fun gastoDao(): GastoDao
 
     abstract fun ingresoDao(): IngresoDao
+
+    abstract fun espacioDao(): EspacioDao
+
+    abstract fun reservaDao(): ReservaDao
+
+    abstract fun pagoDao(): PagoDao
 
     companion object {
 
@@ -47,6 +56,7 @@ abstract class ZarorDatabase : RoomDatabase() {
                         ZarorDatabase::class.java,
                         "zaror_database"
                     )
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                         .addCallback(
                             object : RoomDatabase.Callback() {
 
@@ -81,6 +91,8 @@ abstract class ZarorDatabase : RoomDatabase() {
                                         ('Otros arriendos', 40000, '06/11/2026')
                                         """.trimIndent()
                                     )
+                                    //insertar espacios iniciales
+                                    db.execSQL("INSERT INTO espacios(id, nombre, capacidadMaxima, habilitado) VALUES (1, 'Quincho', 25, 1), (2, 'Sala multiuso', 40, 0), (3, 'Piscina', 60, 1)")
                                 }
                             }
                         )

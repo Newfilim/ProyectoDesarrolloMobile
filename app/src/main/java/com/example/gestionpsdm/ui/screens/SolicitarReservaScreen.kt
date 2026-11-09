@@ -39,6 +39,7 @@ fun SolicitarReservaScreen(
 
     val estado by viewModel.estado.collectAsState()
     val errores by viewModel.errores.collectAsState()
+    val guardando by viewModel.guardando.collectAsState()
     val context = LocalContext.current
 
     var mostrarConfirmacion by remember {
@@ -174,40 +175,41 @@ fun SolicitarReservaScreen(
         Button(
             onClick = {
 
-                val resultado = viewModel.registrarReserva(
-                    idUsuario,
-                    idEspacio
-                )
+                mostrarConfirmacion = false
 
-                if (resultado) {
+                viewModel.registrarReserva(
+                    idUsuario = idUsuario,
+                    idEspacio = idEspacio
+                ) { correcto, mensaje ->
 
-                    // Limpiar los campos después de registrar la reserva.
-                    viewModel.actualizarFecha("")
-                    viewModel.actualizarHoraInicio("")
-                    viewModel.actualizarHoraFin("")
-
-                    mostrarConfirmacion = true
+                    if (correcto) {
+                        mostrarConfirmacion = true
+                    }
 
                     Toast.makeText(
                         context,
-                        "Reserva realizada en espera de aprobación",
+                        mensaje,
                         Toast.LENGTH_SHORT
                     ).show()
-
-                } else {
-                    mostrarConfirmacion = false
                 }
             },
+            enabled = !guardando,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp),
             shape = RoundedCornerShape(14.dp)
         ) {
+
             Text(
-                text = "Enviar solicitud de reserva  →",
+                text = if (guardando) {
+                    "Guardando solicitud..."
+                } else {
+                    "Enviar solicitud de reserva  →"
+                },
                 style = MaterialTheme.typography.labelLarge
             )
         }
+
 
         if (mostrarConfirmacion) {
 
