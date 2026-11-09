@@ -17,8 +17,6 @@ sealed class Screen(val route: String) {
 
     data object GestionReservas : Screen("gestion_reservas_page")
 
-    data object Tesoreria : Screen("tesoreria_page")
-
     data object MisReservas : Screen("mis_reservas_page")
 
     data object GestionEspacios : Screen("gestion_espacios_page")

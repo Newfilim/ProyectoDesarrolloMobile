@@ -27,9 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gestionpsdm.model.Espacio
 import com.example.gestionpsdm.model.EstadoReserva
-import com.example.gestionpsdm.repository.ReservasDemoRepository
 import com.example.gestionpsdm.repository.UsuariosDemoRepository
-import com.example.gestionpsdm.repository.EspaciosDemoRepository
 import com.example.gestionpsdm.viewmodel.GestionReservasViewModel
 
 @Composable

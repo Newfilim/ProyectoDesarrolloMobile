@@ -38,8 +38,6 @@ import com.example.gestionpsdm.model.Espacio
 
 import com.example.gestionpsdm.model.EstadoPago
 import com.example.gestionpsdm.model.EstadoReserva
-import com.example.gestionpsdm.repository.EspaciosDemoRepository
-import com.example.gestionpsdm.repository.ReservasDemoRepository
 import com.example.gestionpsdm.utils.crearArchivoComprobante
 import com.example.gestionpsdm.utils.crearUriComprobante
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel

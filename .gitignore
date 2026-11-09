@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Generated Kotlin diagnostic and IDE files
+.kotlin/

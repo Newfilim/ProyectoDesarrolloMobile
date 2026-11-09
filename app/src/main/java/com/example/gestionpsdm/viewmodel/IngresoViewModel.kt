@@ -3,7 +3,7 @@ package com.example.gestionpsdm.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.gestionpsdm.repository.Ingreso
+import com.example.gestionpsdm.model.Ingreso
 import com.example.gestionpsdm.repository.IngresosRoomRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

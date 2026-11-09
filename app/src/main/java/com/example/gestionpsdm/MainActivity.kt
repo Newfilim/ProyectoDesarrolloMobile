@@ -33,8 +33,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gestionpsdm.navigation.Screen
 import com.example.gestionpsdm.model.RolUsuario
 import com.example.gestionpsdm.repository.UsuariosDemoRepository
-import com.example.gestionpsdm.repository.EspaciosDemoRepository
-
 import com.example.gestionpsdm.ui.screens.EspaciosScreen
 import com.example.gestionpsdm.ui.screens.HomeScreen
 import com.example.gestionpsdm.ui.screens.FinanzasScreen
@@ -43,7 +41,6 @@ import com.example.gestionpsdm.ui.screens.LoginScreen
 import com.example.gestionpsdm.ui.screens.PanelRolScreen
 import com.example.gestionpsdm.ui.screens.GestionUsuariosScreen
 import com.example.gestionpsdm.ui.screens.GestionReservasScreen
-import com.example.gestionpsdm.ui.screens.TesoreriaScreen
 import com.example.gestionpsdm.ui.screens.MisReservasScreen
 import com.example.gestionpsdm.ui.screens.GestionEspaciosScreen
 import com.example.gestionpsdm.ui.screens.InformeFinancieroScreen
@@ -124,8 +121,6 @@ class MainActivity : ComponentActivity() {
                     factory = ComprobantesViewModelFactory(pagosRepository)
                 )
 
-                val espaciosDemo = EspaciosDemoRepository.espacios
-
                 // Pantalla principal correspondiente a cada perfil.
                 val rutaInicio = if (
                     usuarioActual?.rol == RolUsuario.RESIDENTE
@@ -183,9 +178,6 @@ class MainActivity : ComponentActivity() {
 
                     rutaActual == Screen.ConsultarIngresos.route ->
                         "Ingresos"
-
-                    rutaActual == Screen.Tesoreria.route ->
-                        "Tesorería"
 
                     else -> "Junta de Vecinos"
                 }
@@ -519,10 +511,6 @@ class MainActivity : ComponentActivity() {
                                 viewModel = reservasViewModel,
                                 espacios = espacios
                             )
-                        }
-
-                        composable(Screen.Tesoreria.route) {
-                            TesoreriaScreen()
                         }
 
                         composable(Screen.MisReservas.route) {

@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.gestionpsdm.repository.Ingreso
+import com.example.gestionpsdm.model.Ingreso
 import java.text.NumberFormat
 import java.util.Locale
 

@@ -1,263 +1,163 @@
 # Junta de Vecinos Población Zaror
 
-Aplicación móvil desarrollada para la asignatura **Desarrollo de Aplicaciones Móviles (DSY1105)** de Duoc UC.
+Aplicación Android desarrollada para **Desarrollo de Aplicaciones Móviles (DSY1105), Duoc UC**, Evaluación Parcial 2 (2026).
 
-**Desarrollador:** Cristopher Guerra Vergara  
-**Evaluación:** Evaluación Parcial 2 — Primera entrega  
-**Plataforma:** Android  
-**Lenguaje:** Kotlin
+**Repositorio:** https://github.com/Newfilim/ProyectoDesarrolloMobile  
+**Desarrollador identificado:** Cristopher Guerra Vergara  
+**Tecnologías principales:** Kotlin, Jetpack Compose, Material 3, MVVM y Room.
 
-## 1. Descripción del proyecto
+> Proyecto académico con cuentas y movimientos ficticios. No está diseñado para producción ni para gestionar dinero real.
 
-El proyecto consiste en una aplicación Android destinada a facilitar la administración de los espacios comunitarios, reservas y movimientos financieros de la Junta de Vecinos Población Zaror.
+## 1. Objetivo
 
-La aplicación permite que los residentes soliciten reservas de espacios comunitarios, que la Administración gestione usuarios y solicitudes, que Tesorería revise comprobantes y registre movimientos financieros, y que Directiva consulte informes sobre los ingresos, gastos y balance de la comunidad.
+Apoyar la gestión de reservas de espacios comunitarios y movimientos financieros de la **Junta de Vecinos Población Zaror**. La aplicación diferencia cuatro perfiles de uso: Residente, Administrador, Tesorería y Directiva.
 
-El proyecto utiliza datos ficticios con fines académicos y de demostración.
+## 2. Funcionalidades por perfil
 
-## 2. Tecnologías utilizadas
+| Perfil | Funcionalidades |
+| --- | --- |
+| **Residente** | Inicio de sesión; consulta y filtrado de espacios; solicitud de reservas con fecha y horario; seguimiento de solicitudes; envío y reenvío de comprobantes con cámara o galería; consulta de su estado. |
+| **Administrador** | Consulta, creación y edición de cuentas de demostración; habilitación/deshabilitación de usuarios y espacios; aprobación y rechazo de reservas; comprobación de superposición de horarios aprobados. |
+| **Tesorería** | Revisión, confirmación y rechazo de comprobantes; registro manual de ingresos y gastos comunitarios. |
+| **Directiva** | Consulta de ingresos, gastos, balance y gráficos financieros. |
 
-- **Android Studio:** entorno de desarrollo.
-- **Kotlin:** lenguaje de programación.
-- **Jetpack Compose:** construcción de interfaces.
-- **Material Design 3:** componentes visuales.
-- **MVVM:** separación entre interfaz, lógica y datos.
-- **Navigation Compose:** navegación entre pantallas.
-- **StateFlow y MutableStateFlow:** gestión de estados en ViewModels.
-- **mutableStateListOf y mutableStateMapOf:** colecciones observables.
-- **DataStore Preferences:** almacenamiento de preferencias.
-- **Coil:** visualización de imágenes mediante `AsyncImage`.
-- **Activity Result Contracts:** integración con cámara y galería.
-- **FileProvider:** gestión de URI para fotografías.
-- **Corrutinas:** ejecución de operaciones asíncronas y simulación de carga.
-- **JUnit:** pruebas unitarias.
-- **Git y GitHub:** control de versiones.
+**Espacios iniciales:** Quincho (25 personas), Sala multiuso (40) y Piscina (60). Su disponibilidad se administra desde la aplicación.
 
-## 3. Arquitectura del proyecto
+## 3. Flujo de reservas y pagos
 
-Se utiliza una estructura basada en MVVM (*Model-View-ViewModel*), organizada en los siguientes paquetes:
+1. El residente selecciona un espacio habilitado, una fecha y un horario. Se validan el formulario, las fechas y los horarios permitidos.
+2. Se guarda una reserva `PENDIENTE` en Room.
+3. Administración la aprueba (`APROBADA`) o rechaza (`RECHAZADA`). Al aprobar, comprueba que no exista otra reserva **aprobada** del mismo espacio con horario superpuesto, incluidos horarios que cruzan medianoche.
+4. Una reserva aprobada genera un pago `PENDIENTE` asociado a ella.
+5. El residente sube una fotografía del comprobante y su estado pasa a `EN_REVISION`.
+6. Tesorería revisa la imagen y cambia el pago a `CONFIRMADO` o `RECHAZADO`. Un comprobante rechazado puede reenviarse.
+7. Tesorería **registra manualmente** el monto recibido en la pantalla de ingresos. Confirmar el comprobante **no genera automáticamente un ingreso contable**.
 
-| Paquete | Responsabilidad |
-|---|---|
-| `model` | Modelos de datos, enumeraciones y estados de formularios. |
-| `repository` | Administración de datos y operaciones sobre colecciones. |
-| `viewmodel` | Validaciones, lógica de presentación y gestión de estados. |
-| `ui.screens` | Pantallas desarrolladas con Jetpack Compose. |
-| `ui.components` | Componentes visuales reutilizables. |
-| `ui.theme` | Configuración de estilos y tema visual. |
-| `navigation` | Definición de rutas. |
-| `utils` | Funciones auxiliares para archivos e imágenes. |
+**Estados de reserva:** `PENDIENTE`, `APROBADA`, `RECHAZADA`, `CANCELADA`.  
+**Estados de pago:** `PENDIENTE`, `EN_REVISION`, `CONFIRMADO`, `RECHAZADO`.
 
-La aplicación utiliza repositorios compartidos para comunicar las operaciones de los distintos perfiles durante la ejecución.
+**Horario permitido:** domingo a jueves, de 08:00 a 22:00; viernes y sábado, desde las 08:00 hasta las 02:00 del día siguiente.
 
-## 4. Perfiles y funcionalidades
+## 4. Arquitectura MVVM y POO
 
-### 4.1. Residente
+```text
+app/src/main/java/com/example/gestionpsdm/
+├── model/          Modelos, estados de formularios y enumeraciones
+├── data/local/     Entidades, DAO, mappers, Room y migraciones
+├── repository/     Acceso y transformación de datos
+├── viewmodel/      Validaciones, estado observable y operaciones de UI
+├── ui/
+│   ├── screens/    Pantallas Jetpack Compose
+│   ├── components/ Componentes reutilizables y gráficos
+│   └── theme/      Tema, colores y tipografía
+├── navigation/     Rutas
+├── utils/          Utilidades para imágenes y archivos
+└── MainActivity.kt
+```
 
-- Iniciar y cerrar sesión.
-- Consultar espacios comunitarios.
-- Filtrar espacios habilitados.
-- Solicitar reservas indicando fecha y horario.
-- Consultar únicamente sus propias reservas.
-- Visualizar el estado de aprobación de sus solicitudes.
-- Adjuntar comprobantes mediante cámara o galería.
-- Consultar el estado de revisión de sus comprobantes.
-- Reemplazar comprobantes rechazados.
+El recorrido de acceso a datos es **Pantalla → ViewModel → Repository → DAO → Room**. Se utilizan `Flow` y `StateFlow` para reflejar cambios en la interfaz.
 
-### 4.2. Administrador
+La programación orientada a objetos se aplica mediante clases de modelo como `Usuario`, `Espacio`, `Reserva`, `Pago`, `Gasto` e `Ingreso`, con atributos, métodos de negocio y enumeraciones (`RolUsuario`, `EstadoReserva`, `EstadoPago`, `CategoriaGasto`). No se crean subclases artificiales para tipos de espacio o rol que comparten estructura y comportamiento.
 
-- Iniciar y cerrar sesión.
-- Consultar las cuentas existentes.
-- Crear usuarios con nombre, correo, contraseña y rol.
-- Editar nombre y correo de usuarios.
-- Habilitar y deshabilitar cuentas.
-- Impedir el ingreso de cuentas deshabilitadas.
-- Consultar solicitudes de reserva.
-- Aprobar o rechazar solicitudes pendientes.
+## 5. Persistencia local
 
-### 4.3. Tesorería
+La base **`zaror_database`** utiliza **Room / SQLite**, actualmente en versión **4**, con migraciones `1→2`, `2→3` y `3→4`.
 
-- Iniciar y cerrar sesión.
-- Consultar comprobantes enviados por residentes.
-- Visualizar fotografías de los comprobantes.
-- Confirmar o rechazar comprobantes.
-- Registrar gastos comunitarios con descripción, monto, fecha y categoría.
-- Registrar ingresos manualmente con descripción, monto y fecha.
-- Consultar los ingresos registrados.
+| Tabla | Almacena |
+| --- | --- |
+| `espacios` | Identificadores, capacidades y disponibilidad |
+| `reservas` | Solicitudes, fechas, horarios y aprobación |
+| `pagos` | Estados y referencia al comprobante |
+| `ingresos` | Movimientos ingresados manualmente |
+| `gastos` | Movimientos y categorías de gasto |
 
-### 4.4. Directiva
+Las imágenes de comprobantes se copian al almacenamiento privado de la aplicación para mantener el acceso tras reiniciarla. **DataStore Preferences** conserva la preferencia de filtro de espacios habilitados.
 
-- Iniciar y cerrar sesión.
-- Consultar el informe financiero.
-- Visualizar el total de ingresos registrados.
-- Visualizar el total de gastos registrados.
-- Consultar el balance calculado a partir de ambos totales.
+**Excepción importante:** las cuentas de demostración y las modificaciones realizadas en Gestión de usuarios se mantienen en memoria (`UsuariosDemoRepository`); no persisten en Room al finalizar el proceso de la aplicación.
 
-## 5. Espacios comunitarios
+Las instalaciones nuevas reciben espacios y algunos movimientos financieros **ficticios** de ejemplo. No equivalen a dinero real recibido o gastado.
 
-La aplicación contempla tres espacios:
+## 6. Formularios, interacción y animaciones
 
-1. Quincho.
-2. Piscina.
-3. Sala multiuso.
+- Formularios de acceso, gestión de usuarios, reservas, ingresos y gastos con validaciones y mensajes de error.
+- Comprobación de campos obligatorios, correos, contraseñas, fechas y horas, montos y categorías según el formulario.
+- Navegación entre pantallas por rol, tarjetas, controles de estado y retroalimentación visual.
+- **`AnimatedVisibility`** y **`Crossfade`** en la presentación de controles y estados; indicadores de procesamiento para acciones asíncronas.
+- Gráficos de ingresos, gastos por categoría y balance financiero.
 
-Cada espacio contiene un identificador, nombre, capacidad máxima y estado de habilitación.
+## 7. Recursos nativos Android
 
-Los residentes pueden solicitar reservas de espacios habilitados.
+- **Cámara:** `ActivityResultContracts.TakePicture()` y `FileProvider` para capturar comprobantes.
+- **Galería / selector de imágenes:** `ActivityResultContracts.GetContent()` para seleccionar fotografías existentes.
+- **Coil (`AsyncImage`)** muestra las imágenes en la aplicación. Los comprobantes se copian a archivos privados para conservarlos.
 
-## 6. Funcionamiento de las reservas
+## 8. Herramientas y bibliotecas
 
-El proceso implementado es el siguiente:
+- **Android Studio**, Kotlin y Gradle.
+- **Jetpack Compose**, Material Design 3 y Navigation Compose.
+- **ViewModel**, corrutinas, `Flow`, `StateFlow` y MVVM.
+- **Room**, SQLite y KSP.
+- **DataStore Preferences**, Coil y Activity Result Contracts.
+- **JUnit**, Git y GitHub.
 
-1. El residente selecciona un espacio habilitado.
-2. Ingresa la fecha y el horario.
-3. El sistema valida los datos ingresados.
-4. Se registra una solicitud con estado `PENDIENTE`.
-5. El Administrador revisa la solicitud.
-6. El Administrador cambia su estado a `APROBADA` o `RECHAZADA`.
-7. Cuando la reserva está aprobada, el residente puede adjuntar un comprobante.
-8. Al adjuntar el comprobante, su estado cambia a `EN_REVISION`.
-9. Tesorería revisa la fotografía y confirma o rechaza el comprobante.
-10. El residente puede consultar el resultado de la revisión.
+Las versiones específicas se declaran en `gradle/libs.versions.toml` y `app/build.gradle.kts`.
 
-**Estados de reserva:** `PENDIENTE`, `APROBADA`, `RECHAZADA` y `CANCELADA`.
-
-**Estados de pago:** `PENDIENTE`, `EN_REVISION`, `CONFIRMADO` y `RECHAZADO`.
-
-La aprobación de reservas se realiza manualmente por el Administrador.
-
-## 7. Gestión financiera
-
-Tesorería registra manualmente los movimientos financieros.
-
-### Ingresos
-
-Cada ingreso contiene:
-
-- Identificador.
-- Descripción.
-- Monto.
-- Fecha.
-
-### Gastos
-
-Cada gasto contiene:
-
-- Identificador.
-- Descripción.
-- Monto.
-- Fecha.
-- Categoría.
-
-Los gastos e ingresos se almacenan en repositorios observables durante la ejecución.
-
-### Cálculo del balance
-
-La aplicación calcula:
-
-**Balance = Total de ingresos registrados − Total de gastos registrados**
-
-Los cálculos se actualizan a partir de los movimientos ingresados y se presentan en el informe financiero de Directiva.
-
-Los ingresos todavía no están asociados automáticamente a las reservas ni a sus comprobantes. Su registro es independiente y manual.
-
-## 8. Formularios y validaciones
-
-La aplicación incorpora validaciones para los principales formularios.
-
-Entre las validaciones implementadas se encuentran:
-
-- Campos obligatorios.
-- Formato de correo electrónico.
-- Contraseñas con longitud mínima al crear usuarios.
-- Comprobación de correos duplicados.
-- Fechas válidas.
-- Restricción de fechas pasadas en reservas.
-- Restricción de fechas futuras en movimientos financieros.
-- Horarios permitidos para reservas.
-- Validación de montos numéricos mayores que cero.
-- Selección de categorías para gastos.
-
-Los formularios muestran mensajes cuando los datos ingresados no cumplen las condiciones establecidas.
-
-## 9. Recursos nativos de Android
-
-Se implementaron dos recursos nativos:
-
-**Cámara:** permite capturar fotografías para adjuntarlas como comprobantes de pago.
-
-**Galería:** permite seleccionar fotografías existentes en el dispositivo.
-
-Para su integración se utilizan `ActivityResultContracts`, `FileProvider` y URI. Las imágenes se visualizan mediante Coil y `AsyncImage`.
-
-## 10. Estados y animaciones
-
-Se incorporaron componentes para mejorar la interacción:
-
-- `Crossfade`: animación de cambios de estado de pago.
-- `AnimatedVisibility`: aparición y desaparición de controles.
-- `CircularProgressIndicator`: indicador de carga durante la confirmación simulada de comprobantes.
-- `StateFlow`: actualización de formularios.
-- Colecciones observables de Compose: actualización de listas y datos.
-
-## 11. Cuentas de demostración
+## 9. Cuentas de demostración
 
 | Perfil | Correo | Contraseña |
-|---|---|---|
-| Residente | residente@zaror.cl | Demo1234! |
-| Administrador | admin@zaror.cl | Demo1234! |
-| Tesorería | tesoreria@zaror.cl | Demo1234! |
-| Directiva | directiva@zaror.cl | Demo1234! |
+| --- | --- | --- |
+| Residente | `residente@zaror.cl` | `Demo1234!` |
+| Administrador | `admin@zaror.cl` | `Demo1234!` |
+| Tesorería | `tesoreria@zaror.cl` | `Demo1234!` |
+| Directiva | `directiva@zaror.cl` | `Demo1234!` |
 
-Estas cuentas son exclusivamente de demostración y no deben utilizarse como credenciales reales.
+Estas credenciales están incluidas **solo para demostración académica**.
 
-El Administrador también puede crear nuevas cuentas durante la ejecución de la aplicación.
+## 10. Instalación y ejecución
 
-## 12. Instrucciones de ejecución
+1. Clonar el repositorio:
 
-1. Clonar el repositorio desde GitHub.
-2. Abrir el proyecto en Android Studio.
-3. Configurar un JDK compatible. El proyecto se ha trabajado utilizando JDK 21.
-4. Sincronizar las dependencias de Gradle.
-5. Seleccionar un emulador Android compatible.
-6. Ejecutar la aplicación mediante **Run**.
-7. Iniciar sesión con alguna de las cuentas de demostración.
+   ```bash
+   git clone https://github.com/Newfilim/ProyectoDesarrolloMobile.git
+   ```
 
-**Emulador utilizado durante el desarrollo:** Google Pixel 4.
+2. Abrir la carpeta `ProyectoDesarrolloMobile` en **Android Studio**.
+3. Seleccionar un JDK compatible con Gradle; durante el desarrollo se utilizó **JDK 21** para sincronizar.
+4. Ejecutar **Gradle Sync** y esperar la descarga de dependencias.
+5. Iniciar un emulador o dispositivo Android compatible (**minSdk 24**); durante el desarrollo se utilizó un **Pixel 4 virtual**.
+6. Ejecutar la configuración **app** con **Run** e iniciar sesión con una cuenta de demostración.
 
-## 13. Persistencia y limitaciones actuales
+Para comprobar la persistencia, cerrar y reabrir la aplicación **sin desinstalarla ni borrar sus datos**.
 
-La aplicación utiliza DataStore Preferences para conservar la preferencia de visualización de espacios habilitados.
+## 11. Pruebas
 
-Los usuarios, reservas, comprobantes, ingresos y gastos utilizan principalmente almacenamiento temporal en memoria. Por lo tanto, estos datos pueden perderse cuando finaliza el proceso de la aplicación.
+El proyecto contiene pruebas locales con **JUnit** para modelos y se ha comprobado manualmente el flujo de navegación entre los cuatro roles.
 
-Otras limitaciones de esta entrega:
+Recorrido de verificación:
 
-- La disponibilidad de horarios todavía no contempla una comprobación completa de superposición entre reservas.
-- La aprobación de reservas es manual.
-- Los ingresos se registran manualmente y no se vinculan con reservas.
-- Los informes representan los movimientos registrados en la aplicación, no necesariamente la situación contable real de la comunidad.
-- El sistema de autenticación utiliza cuentas y contraseñas de demostración y no está preparado para producción.
+1. Administrador: habilitar/deshabilitar espacios y comprobar el estado tras reiniciar.
+2. Residente: crear una reserva válida y comprobar errores de fecha y horario.
+3. Administrador: aprobar una reserva e intentar aprobar otra con horario superpuesto.
+4. Residente: subir un comprobante desde galería y desde cámara.
+5. Tesorería: rechazar, recibir un nuevo comprobante y confirmarlo.
+6. Tesorería: registrar ingresos y gastos manualmente.
+7. Directiva: consultar los totales y gráficos; reiniciar para comprobar la persistencia.
 
-## 14. Mejoras futuras
+## 12. Alcance y limitaciones
 
-- Implementar persistencia local de los datos de negocio mediante una base de datos.
-- Validar automáticamente la disponibilidad de horarios y evitar reservas superpuestas.
-- Asociar ingresos con reservas y comprobantes de pago.
-- Automatizar determinadas operaciones de gestión de reservas.
-- Implementar un control más completo de plazos y vencimientos de pagos.
-- Mejorar los controles de autenticación y seguridad.
-- Ampliar las pruebas automatizadas.
-- Continuar mejorando las interfaces y la experiencia de usuario.
+- Aplicación **local** de demostración: no existe backend ni sincronización entre dispositivos.
+- Autenticación y perfiles mediante cuentas ficticias en memoria; no constituyen un sistema seguro de usuarios para producción.
+- Los ingresos se registran manualmente; confirmar un comprobante no acredita automáticamente un ingreso monetario.
+- Los conflictos de horario se comprueban al **aprobar** reservas. Una solicitud pendiente no bloquea por sí sola la franja horaria.
+- No está implementado el vencimiento automático de pagos a los tres días ni una tarifa obligatoria por espacio.
+- Los informes muestran movimientos registrados en la aplicación, incluidos datos iniciales ficticios.
 
-## 15. Control de versiones
+## 13. Control de versiones y planificación
 
-El proyecto se desarrolla utilizando Git y GitHub, con commits que documentan los avances de implementación y corrección.
+Repositorio con historial de cambios: **https://github.com/Newfilim/ProyectoDesarrolloMobile**.
 
-Repositorio:
-
-https://github.com/Newfilim/ProyectoDesarrolloMobile
+La planificación del equipo y su distribución de tareas se presentan mediante Trello o la herramienta colaborativa utilizada. **El enlace específico del tablero debe añadirse cuando esté disponible**; no está incluido en la copia revisada.
 
 ---
 
-**Proyecto académico — Desarrollo de Aplicaciones Móviles, Duoc UC — 2026.**
+**Proyecto académico — Duoc UC, 2026.**

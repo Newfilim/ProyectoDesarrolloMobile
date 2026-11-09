@@ -4,13 +4,14 @@ package com.example.gestionpsdm.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gestionpsdm.repository.GastosRoomRepository
-import com.example.gestionpsdm.repository.IngresosRoomRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import com.example.gestionpsdm.data.local.GastoPorCategoria
-import com.example.gestionpsdm.repository.Ingreso
+import com.example.gestionpsdm.model.Ingreso
+import com.example.gestionpsdm.repository.IngresosRoomRepository
+
 data class ResumenFinanciero(
     val ingresos: Long = 0L,
     val gastos: Long = 0L,

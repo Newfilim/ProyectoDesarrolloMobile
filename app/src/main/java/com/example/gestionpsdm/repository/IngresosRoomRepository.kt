@@ -3,6 +3,7 @@ package com.example.gestionpsdm.repository
 
 import com.example.gestionpsdm.data.local.IngresoDao
 import com.example.gestionpsdm.data.local.IngresoEntity
+import com.example.gestionpsdm.model.Ingreso
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
