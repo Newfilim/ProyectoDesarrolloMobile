@@ -22,6 +22,12 @@ class GestionReservasViewModel(
             initialValue = emptyList()
         )
 
+    val reservasPendientesDePago = repository.reservasPendientesDePago().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptySet()
+    )
+
     fun cambiarEstado(
         idReserva: Int,
         nuevoEstado: EstadoReserva,

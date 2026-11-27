@@ -11,12 +11,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,9 +40,31 @@ fun GestionReservasScreen(
 ) {
 
     val reservas by viewModel.reservas.collectAsState()
+    val reservasPendientesDePago by viewModel.reservasPendientesDePago.collectAsState()
+    var rechazoPorImpago by remember { mutableStateOf<Int?>(null) }
 
     var idReservaConError by remember {
         mutableStateOf<Int?>(null)
+    }
+
+    val idPorRechazar = rechazoPorImpago
+    if (idPorRechazar != null) {
+        AlertDialog(
+            onDismissRequest = { rechazoPorImpago = null },
+            title = { Text("Rechazar por falta de pago") },
+            text = { Text("La reserva se rechazará definitivamente y se liberará el horario.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    rechazoPorImpago = null
+                    viewModel.cambiarEstado(idPorRechazar, EstadoReserva.RECHAZADA) { correcto ->
+                        idReservaConError = if (correcto) null else idPorRechazar
+                    }
+                }) { Text("Rechazar reserva") }
+            },
+            dismissButton = {
+                TextButton(onClick = { rechazoPorImpago = null }) { Text("Volver") }
+            }
+        )
     }
 
     LazyColumn(
@@ -212,21 +236,36 @@ fun GestionReservasScreen(
                             )
                         }
 
-                        // Mensaje cuando existe un conflicto de horario
-                        if (idReservaConError == reserva.id) {
+                    }
 
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.errorContainer
-                            ) {
+                    if (reserva.estado == EstadoReserva.APROBADA &&
+                        reserva.id in reservasPendientesDePago
+                    ) {
+                        OutlinedButton(
+                            onClick = { rechazoPorImpago = reserva.id },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Rechazar por falta de pago")
+                        }
+                    }
 
-                                Text(
-                                    text = "No se puede aprobar esta solicitud porque existe otra reserva aprobada para el mismo espacio y horario.",
-                                    modifier = Modifier.padding(16.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
+                    if (idReservaConError == reserva.id) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.errorContainer
+                        ) {
+                            val mensaje = if (reserva.estado == EstadoReserva.PENDIENTE) {
+                                "No se pudo actualizar la solicitud. Para aprobarla, comprueba que no haya otra reserva vigente superpuesta en el mismo espacio."
+                            } else {
+                                "No se pudo rechazar la reserva. Verifica su estado y el del pago."
                             }
+                            Text(
+                                text = mensaje,
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
                 }

@@ -1,4 +1,3 @@
-
 package com.example.gestionpsdm.repository
 
 import androidx.room.withTransaction
@@ -6,169 +5,115 @@ import com.example.gestionpsdm.data.local.PagoEntity
 import com.example.gestionpsdm.data.local.ReservaEntity
 import com.example.gestionpsdm.data.local.ZarorDatabase
 import com.example.gestionpsdm.data.local.toModel
-import com.example.gestionpsdm.model.Reserva
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import com.example.gestionpsdm.model.BloqueHorario
 import com.example.gestionpsdm.model.EstadoReserva
-import java.text.SimpleDateFormat
-import java.util.Calendar
+import com.example.gestionpsdm.model.Reserva
+import com.example.gestionpsdm.utils.HorariosReserva
 import java.util.Date
-import java.util.Locale
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+
 class ReservasRoomRepository(
     private val database: ZarorDatabase
 ) {
-
     private val reservaDao = database.reservaDao()
     private val espacioDao = database.espacioDao()
+    private val pagoDao = database.pagoDao()
 
-    suspend fun cambiarEstado(
-        idReserva: Int,
-        nuevoEstado: EstadoReserva
-    ): Boolean {
+    fun observarBloques(
+        idEspacio: Int,
+        fecha: String,
+        reloj: Flow<Date>
+    ): Flow<List<BloqueHorario>> {
+        val bloques = HorariosReserva.bloques(fecha)
+        return combine(
+            reservaDao.observarVigentes(idEspacio),
+            espacioDao.observarHabilitado(idEspacio),
+            reloj
+        ) { vigentes, habilitado, ahora ->
+            bloques.map { bloque ->
+                val disponible = habilitado == true &&
+                    fechaOperativaVigente(fecha, ahora) &&
+                    bloque.inicio.after(ahora) &&
+                    !hayConflicto(bloque.inicio, bloque.fin, vigentes)
+                bloque.copy(disponible = disponible)
+            }
+        }
+    }
 
-        if (
-            nuevoEstado != EstadoReserva.APROBADA &&
-            nuevoEstado != EstadoReserva.RECHAZADA
-        ) {
+    private fun fechaOperativaVigente(fecha: String, ahora: Date): Boolean {
+        val apertura = HorariosReserva.convertir(fecha, "08:00") ?: return false
+        val aperturaHoy = HorariosReserva.convertir(HorariosReserva.fecha(ahora), "08:00")
+            ?: return false
+        return !apertura.before(aperturaHoy)
+    }
+
+    fun reservasPendientesDePago(): Flow<Set<Int>> {
+        return pagoDao.observarReservasSinPago().map { ids -> ids.toSet() }
+    }
+
+    suspend fun cambiarEstado(idReserva: Int, nuevoEstado: EstadoReserva): Boolean {
+        if (nuevoEstado != EstadoReserva.APROBADA && nuevoEstado != EstadoReserva.RECHAZADA) {
             return false
         }
 
         return database.withTransaction {
+            val reserva = reservaDao.obtenerPorId(idReserva) ?: return@withTransaction false
+            val pendiente = reserva.estado == EstadoReserva.PENDIENTE.name
+            val rechazoPorImpago = reserva.estado == EstadoReserva.APROBADA.name &&
+                nuevoEstado == EstadoReserva.RECHAZADA
 
-            val reserva = reservaDao.obtenerPorId(idReserva)
-                ?: return@withTransaction false
-
-            if (reserva.estado != EstadoReserva.PENDIENTE.name) {
-                return@withTransaction false
-            }
+            if (!pendiente && !rechazoPorImpago) return@withTransaction false
 
             if (nuevoEstado == EstadoReserva.APROBADA) {
+                val inicio = HorariosReserva.convertir(reserva.fecha, reserva.horaInicio)
+                    ?: return@withTransaction false
+                val fin = HorariosReserva.termino(reserva.fecha, reserva.horaFin, inicio)
+                    ?: return@withTransaction false
+                val vigentes = reservaDao.obtenerVigentes(reserva.idEspacio)
+                if (hayConflicto(inicio, fin, vigentes, idReserva)) return@withTransaction false
+            }
 
-                val aprobadas = reservaDao.obtenerAprobadas()
-
-                for (existente in aprobadas) {
-
-                    if (existente.idEspacio != reserva.idEspacio) {
-                        continue
-                    }
-
-                    if (hayConflicto(reserva, existente)) {
-                        return@withTransaction false
-                    }
+            if (rechazoPorImpago) {
+                // Las aprobaciones anteriores a la tabla de pagos pueden no tener un pago asociado.
+                val pago = pagoDao.buscar(idReserva)
+                if (pago != null && pagoDao.cerrarSinPago(idReserva) != 1) {
+                    return@withTransaction false
                 }
             }
+            reservaDao.actualizarEstado(idReserva, nuevoEstado.name)
 
-            val filasActualizadas = reservaDao.actualizarEstado(
-                idReserva,
-                nuevoEstado.name
-            )
-
-            if (filasActualizadas != 1) {
-                return@withTransaction false
-            }
             if (nuevoEstado == EstadoReserva.APROBADA) {
-                database.pagoDao().crearPendiente(PagoEntity(idReserva = idReserva))
+                pagoDao.crearPendiente(PagoEntity(idReserva = idReserva))
             }
             true
         }
     }
 
-    private fun convertirInicio(
-        fecha: String,
-        hora: String
-    ): Date? {
-
-        val formato = SimpleDateFormat(
-            "dd/MM/yyyy HH:mm",
-            Locale.forLanguageTag("es-CL")
-        )
-
-        formato.isLenient = false
-
-        return try {
-            formato.parse("$fecha $hora")
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun convertirFin(
-        fecha: String,
-        horaInicio: String,
-        horaFin: String
-    ): Date? {
-
-        val inicio = convertirInicio(fecha, horaInicio)
-            ?: return null
-
-        val fin = convertirInicio(fecha, horaFin)
-            ?: return null
-
-        if (fin.after(inicio)) {
-            return fin
-        }
-
-        val calendario = Calendar.getInstance()
-        calendario.time = fin
-        calendario.add(Calendar.DAY_OF_MONTH, 1)
-
-        return calendario.time
-    }
-
     private fun hayConflicto(
-        nueva: ReservaEntity,
-        existente: ReservaEntity
+        inicio: Date,
+        fin: Date,
+        vigentes: List<ReservaEntity>,
+        excluirId: Int? = null
     ): Boolean {
-
-        val inicioNuevo = convertirInicio(
-            nueva.fecha,
-            nueva.horaInicio
-        ) ?: return true
-
-        val finNuevo = convertirFin(
-            nueva.fecha,
-            nueva.horaInicio,
-            nueva.horaFin
-        ) ?: return true
-
-        val inicioExistente = convertirInicio(
-            existente.fecha,
-            existente.horaInicio
-        ) ?: return true
-
-        val finExistente = convertirFin(
-            existente.fecha,
-            existente.horaInicio,
-            existente.horaFin
-        ) ?: return true
-
-        return inicioNuevo.before(finExistente) &&
-                inicioExistente.before(finNuevo)
+        for (existente in vigentes) {
+            if (existente.id == excluirId) continue
+            val otroInicio = HorariosReserva.convertir(existente.fecha, existente.horaInicio)
+                ?: return true
+            val otroFin = HorariosReserva.termino(existente.fecha, existente.horaFin, otroInicio)
+                ?: return true
+            if (HorariosReserva.seSuperponen(inicio, fin, otroInicio, otroFin)) return true
+        }
+        return false
     }
-
 
     fun obtenerTodas(): Flow<List<Reserva>> {
-        return reservaDao.obtenerTodas().map { entidades ->
-            val lista = mutableListOf<Reserva>()
-
-            for (entidad in entidades) {
-                lista.add(entidad.toModel())
-            }
-
-            lista
-        }
+        return reservaDao.obtenerTodas().map { entidades -> entidades.map { it.toModel() } }
     }
 
     fun obtenerPorUsuario(idUsuario: Int): Flow<List<Reserva>> {
-        return reservaDao.obtenerPorUsuario(idUsuario).map { entidades ->
-            val lista = mutableListOf<Reserva>()
-
-            for (entidad in entidades) {
-                lista.add(entidad.toModel())
-            }
-
-            lista
-        }
+        return reservaDao.obtenerPorUsuario(idUsuario).map { entidades -> entidades.map { it.toModel() } }
     }
 
     suspend fun registrarReserva(
@@ -178,29 +123,28 @@ class ReservasRoomRepository(
         horaInicio: String,
         horaFin: String
     ): Boolean {
-
-        if (idUsuario <= 0 || idEspacio <= 0) {
-            return false
-        }
+        if (idUsuario <= 0 || idEspacio <= 0) return false
+        val inicio = HorariosReserva.convertir(fecha, horaInicio) ?: return false
+        val fin = HorariosReserva.termino(fecha, horaFin, inicio) ?: return false
+        if (!HorariosReserva.rangoPermitido(inicio, fin)) return false
 
         return database.withTransaction {
-
-            val habilitado = espacioDao.estaHabilitado(idEspacio)
-
-            if (habilitado != true) {
+            if (espacioDao.estaHabilitado(idEspacio) != true) return@withTransaction false
+            val vigentes = reservaDao.obtenerVigentes(idEspacio)
+            if (!inicio.after(Date()) || hayConflicto(inicio, fin, vigentes)) {
                 return@withTransaction false
             }
 
-            val nuevaReserva = ReservaEntity(
-                idUsuario = idUsuario,
-                idEspacio = idEspacio,
-                fecha = fecha,
-                horaInicio = horaInicio,
-                horaFin = horaFin,
-                estado = "PENDIENTE"
+            reservaDao.insertar(
+                ReservaEntity(
+                    idUsuario = idUsuario,
+                    idEspacio = idEspacio,
+                    fecha = fecha,
+                    horaInicio = horaInicio,
+                    horaFin = horaFin,
+                    estado = EstadoReserva.PENDIENTE.name
+                )
             )
-
-            reservaDao.insertar(nuevaReserva)
             true
         }
     }

@@ -20,4 +20,7 @@ interface EspacioDao {
         "SELECT habilitado FROM espacios WHERE id = :idEspacio LIMIT 1"
     )
     suspend fun estaHabilitado(idEspacio: Int): Boolean?
+
+    @Query("SELECT habilitado FROM espacios WHERE id = :idEspacio LIMIT 1")
+    fun observarHabilitado(idEspacio: Int): Flow<Boolean?>
 }

@@ -32,6 +32,7 @@ import coil.compose.AsyncImage
 
 import com.example.gestionpsdm.model.Espacio
 import com.example.gestionpsdm.model.EstadoPago
+import com.example.gestionpsdm.model.EstadoReserva
 import com.example.gestionpsdm.model.Reserva
 import com.example.gestionpsdm.repository.UsuariosDemoRepository
 import com.example.gestionpsdm.viewmodel.ComprobantesViewModel
@@ -229,7 +230,9 @@ fun RevisarPagosScreen(
                             )
                         }
 
-                        if (estadoPago == EstadoPago.EN_REVISION) {
+                        if (estadoPago == EstadoPago.EN_REVISION &&
+                            reserva?.estado == EstadoReserva.APROBADA
+                        ) {
 
                             Text(
                                 text = "Selecciona una acción después de revisar el comprobante:",
@@ -318,7 +321,11 @@ fun RevisarPagosScreen(
                         if (estadoPago == EstadoPago.RECHAZADO) {
 
                             Text(
-                                text = "Este comprobante fue rechazado.",
+                                text = if (reserva?.estado == EstadoReserva.RECHAZADA) {
+                                    "Administración rechazó definitivamente esta reserva."
+                                } else {
+                                    "Este comprobante fue rechazado."
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error
                             )
